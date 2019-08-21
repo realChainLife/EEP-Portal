@@ -1,6 +1,7 @@
 import { VError } from "verror";
 
 import Intent from "./authz/intents";
+import { Ctx } from "./lib/ctx";
 import logger from "./lib/logger";
 
 interface ErrorBody {
@@ -22,31 +23,12 @@ interface InvalidFields {
     }
   ];
 }
-interface AlreadyExists {
-  type: "ALREADY_EXISTS";
-}
+
 interface NotAuthorized {
   type: "NOT_AUTHORIZED";
 }
 
-interface ProjectCreationFailedWrapper {
-  intent: Intent;
-  reason: "INVALID_FIELDS";
-  // invalidFields: [{
-  //   fieldName: string;
-  //   fieldValue: string;
-  // }]
-}
-interface ProjectCreationFailedWrapper {
-  errorType: "PROJECT_CREATION_FAILED";
-  reason: "PROJECT_EXISTS";
-}
-interface ProjectCreationFailedWrapper {
-  errorType: "PROJECT_CREATION_FAILED";
-  reason: "NOT_AUTHORIZED";
-}
-
-export function toHttpError(error: any | any[]): { code: number; body: ErrorBody } {
+export function toHttpError(ctx: Ctx, error: any | any[]): { code: number; body: ErrorBody } {
   const errors = error instanceof Array ? error : [error];
   const httpErrors = errors.map(convertError);
   const httpError = httpErrors.reduce((acc, err) => ({
@@ -58,7 +40,7 @@ export function toHttpError(error: any | any[]): { code: number; body: ErrorBody
 
 function convertError(error: any): { code: number; message: string } {
   if (error instanceof Error) {
-    logger.debug({ error }, error.message);
+    logger.trace({ error }, error.message);
     return handleError(error);
   } else {
     logger.fatal({ error }, "BUG: Caught a non-Error type");

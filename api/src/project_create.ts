@@ -144,7 +144,7 @@ interface Service {
 
 export function addHttpHandler(server: FastifyInstance, urlPrefix: string, service: Service) {
   server.post(`${urlPrefix}/global.createProject`, mkSwaggerSchema(server), (request, reply) => {
-    const ctx: Ctx = { requestId: request.id, source: "http" };
+    const ctx: Ctx = { requestId: request.id, source: "http", intent: "global.createProject" };
 
     const user: ServiceUser = {
       id: (request as AuthenticatedRequest).user.userId,
@@ -154,7 +154,7 @@ export function addHttpHandler(server: FastifyInstance, urlPrefix: string, servi
     const bodyResult = validateRequestBody(request.body);
 
     if (Result.isErr(bodyResult)) {
-      const { code, body } = toHttpError(new VError(bodyResult, "failed to create project"));
+      const { code, body } = toHttpError(ctx, new VError(bodyResult, "failed to create project"));
       reply.status(code).send(body);
       return;
     }
@@ -174,7 +174,7 @@ export function addHttpHandler(server: FastifyInstance, urlPrefix: string, servi
         reply.status(code).send(body);
       })
       .catch(err => {
-        const { code, body } = toHttpError(err);
+        const { code, body } = toHttpError(ctx, err);
         reply.status(code).send(body);
       });
   });
