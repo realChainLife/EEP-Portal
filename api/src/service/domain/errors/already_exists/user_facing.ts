@@ -1,6 +1,6 @@
 type SubjectType = "project" | "subproject" | "workflowitem" | "user" | "group";
 
-export interface UserFacingError {
+export interface AlreadyExists {
   type: "ALREADY_EXISTS";
   subject: SubjectType;
 }

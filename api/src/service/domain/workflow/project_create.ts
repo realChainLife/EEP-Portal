@@ -16,6 +16,7 @@ import * as Project from "./project";
 import * as ProjectCreated from "./project_created";
 import { ProjectedBudget, projectedBudgetListSchema } from "./projected_budget";
 import { ProjectCreationFailed } from "../errors/invalid_fields";
+import { AlreadyExists } from "../errors/already_exists/internal";
 
 /**
  * Initial data for the new project as given in the request.
@@ -78,8 +79,7 @@ export async function createProject(
   }
 
   if (await repository.projectExists(createEvent.project.id)) {
-    const error = new PreconditionError(ctx, createEvent, "project already exists");
-    return new ProjectCreationFailed({ ctx, requestData }, error);
+    return new AlreadyExists({ ctx, subject: "project" });
   }
 
   // Check authorization (if not root):

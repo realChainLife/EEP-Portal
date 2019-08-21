@@ -1,7 +1,7 @@
 import { VError } from "verror";
 import { Ctx } from "../../../../lib/ctx";
 import { ToUserFacingError } from "../user_facing_error";
-import { UserFacingError } from "./user_facing";
+import { AlreadyExists as UserFacingError } from "./user_facing";
 
 type SubjectType = "project" | "subproject" | "workflowitem" | "user" | "group";
 

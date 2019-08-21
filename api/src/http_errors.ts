@@ -26,7 +26,16 @@ interface NotAuthorized {
   type: "NOT_AUTHORIZED";
 }
 
-export function toHttpError(ctx: Ctx, error: any | any[]): { code: number; body: ErrorBody } {
+export function toHttpError(ctx: Ctx, error: any): { code: number; body: ErrorBody } {
+  if (error instanceof Error) {
+    return doToHttpError(ctx, error);
+  } else {
+    logger.fatal({ error }, "BUG: Caught a non-Error type");
+    console.trace();
+    return { code: 500, message: "Sorry, something went wrong :(" };
+  }
+}
+function doToHttpError(ctx: Ctx, error: Error): { code: number; body: ErrorBody } {
   const errors = error instanceof Array ? error : [error];
   const httpErrors = errors.map(convertError);
   const httpError = httpErrors.reduce((acc, err) => ({
@@ -60,6 +69,7 @@ function handleError(error: Error): { code: number; message: string } {
       return { code: 403, message: error.message };
 
     case "PreconditionError":
+    case "AlreadyExists":
       return { code: 409, message: error.message };
 
     case "ProjectCreationFailed":
