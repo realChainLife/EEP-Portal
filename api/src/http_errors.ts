@@ -1,7 +1,7 @@
 import { VError } from "verror";
 
-import logger from "./lib/logger";
 import Intent from "./authz/intents";
+import logger from "./lib/logger";
 
 interface ErrorBody {
   apiVersion: "1.0";
@@ -11,10 +11,22 @@ interface ErrorBody {
   };
 }
 
-type ErrorType = ProjectCreationFailedWrapper;
+type UserVisibleError = InvalidFields | NotAuthorized | AlreadyExists;
 
-interface InvalidFieldsError {
-  fields: string[];
+interface InvalidFields {
+  type: "INVALID_FIELDS";
+  fields: [
+    {
+      name: string;
+      errorType: string;
+    }
+  ];
+}
+interface AlreadyExists {
+  type: "ALREADY_EXISTS";
+}
+interface NotAuthorized {
+  type: "NOT_AUTHORIZED";
 }
 
 interface ProjectCreationFailedWrapper {
