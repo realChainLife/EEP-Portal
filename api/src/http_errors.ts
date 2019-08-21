@@ -1,16 +1,24 @@
 import { VError } from "verror";
 
 import logger from "./lib/logger";
+import Intent from "./authz/intents";
 
 interface ErrorBody {
   apiVersion: "1.0";
-  error: ErrorType;
+  error: {
+    intent: Intent;
+    reason: UserVisibleError;
+  };
 }
 
 type ErrorType = ProjectCreationFailedWrapper;
 
+interface InvalidFieldsError {
+  fields: string[];
+}
+
 interface ProjectCreationFailedWrapper {
-  errorType: "PROJECT_CREATION_FAILED";
+  intent: Intent;
   reason: "INVALID_FIELDS";
   // invalidFields: [{
   //   fieldName: string;
