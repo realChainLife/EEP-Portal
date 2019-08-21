@@ -3,101 +3,86 @@ import { VError } from "verror";
 import Intent from "./authz/intents";
 import { Ctx } from "./lib/ctx";
 import logger from "./lib/logger";
+import { InternalError } from "./service/domain/errors/internal_errors";
+import { UserVisibleError } from "./service/domain/errors/user_facing_errors";
 
 interface ErrorBody {
   apiVersion: "1.0";
   error: {
     intent: Intent;
-    reason: UserVisibleError;
+    reason: UserVisibleError | string;
   };
 }
 
-interface InvalidFields {
-  type: "INVALID_FIELDS";
-  fields: [
-    {
-      name: string;
-      errorType: string;
-    }
-  ];
-}
-
-interface NotAuthorized {
-  type: "NOT_AUTHORIZED";
-}
-
 export function toHttpError(ctx: Ctx, error: any): { code: number; body: ErrorBody } {
-  if (error instanceof Error) {
+  if (error instanceof Error && (error as any).toUserFacingError !== undefined) {
+    error = (error as any) as InternalError;
     return doToHttpError(ctx, error);
   } else {
     logger.fatal({ error }, "BUG: Caught a non-Error type");
     console.trace();
-    return { code: 500, message: "Sorry, something went wrong :(" };
+    return {
+      code: 500,
+      body: toErrorBody({ intent: ctx.intent!, reason: "Sorry, something went wrong :(" }),
+    };
   }
 }
-function doToHttpError(ctx: Ctx, error: Error): { code: number; body: ErrorBody } {
-  const errors = error instanceof Array ? error : [error];
-  const httpErrors = errors.map(convertError);
-  const httpError = httpErrors.reduce((acc, err) => ({
-    code: Math.max(acc.code, err.code),
-    message: acc.message === "" ? err.message : `${acc.message}, ${err.message}`,
-  }));
-  return { code: httpError.code, body: toErrorBody(httpError) };
+function doToHttpError(ctx: Ctx, error: InternalError): { code: number; body: ErrorBody } {
+  const selectedError = selectError(error);
+  const httpStatusCode = mapErrorToHttpStatusCode(selectedError);
+  const userFacingError = selectedError.toUserFacingError();
+  return {
+    code: httpStatusCode,
+    body: toErrorBody({ intent: ctx.intent!, reason: userFacingError }),
+  };
 }
 
-function convertError(error: any): { code: number; message: string } {
-  if (error instanceof Error) {
-    logger.trace({ error }, error.message);
-    return handleError(error);
-  } else {
-    logger.fatal({ error }, "BUG: Caught a non-Error type");
-    console.trace();
-    return { code: 500, message: "Sorry, something went wrong :(" };
-  }
-}
-
-function handleError(error: Error): { code: number; message: string } {
-  // We select the outer-most error that makes sense to turn into a status code:
-  const name = selectHighLevelCause(error);
-
-  switch (name) {
-    case "BadRequest":
-    case "AuthenticationFailed":
-      return { code: 400, message: error.message };
-
-    case "NotAuthorized":
-      return { code: 403, message: error.message };
-
-    case "PreconditionError":
-    case "AlreadyExists":
-      return { code: 409, message: error.message };
-
-    case "ProjectCreationFailed":
-      return { code: 400, message: error.message };
-
-    default:
-      return { code: 500, message: error.message };
-  }
-}
-
-function selectHighLevelCause(error: Error): string {
+function selectError(error: InternalError): InternalError {
+  // We select the outer-most error:
   if (error.name !== "Error" && error.name !== "VError") {
-    return error.name;
+    return error;
   }
   const cause = VError.cause(error);
   if (cause === null) {
-    return error.name;
+    return error;
   } else {
-    return selectHighLevelCause(cause);
+    return selectError(cause);
   }
 }
 
-function toErrorBody({ code, message }): ErrorBody {
+function mapErrorToHttpStatusCode(error: InternalError): number {
+  switch (error.name) {
+    case "BadRequest":
+    case "AuthenticationFailed":
+      return 400;
+
+    case "NotAuthorized":
+      return 403;
+
+    case "PreconditionError":
+    case "AlreadyExists":
+      return 409;
+
+    case "ProjectCreationFailed":
+      return 400;
+
+    default:
+      return 500;
+  }
+}
+
+function toErrorBody({
+  intent,
+  reason,
+}: {
+  intent: Intent;
+  reason: UserVisibleError | string;
+}): ErrorBody {
   return {
     apiVersion: "1.0",
     error: {
-      code,
-      message,
+      intent,
+      reason,
     },
   };
 }
