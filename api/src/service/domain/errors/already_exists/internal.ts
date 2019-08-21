@@ -1,14 +1,9 @@
 import { VError } from "verror";
-
-import { Ctx } from "../../../lib/ctx";
-import * as ProjectCreated from "../workflow/project_created";
+import { Ctx } from "../../../../lib/ctx";
+import { ToUserFacingError } from "../user_facing_error";
+import { UserFacingError } from "./user_facing";
 
 type SubjectType = "project" | "subproject" | "workflowitem" | "user" | "group";
-
-export interface UserFacingError {
-  type: "ALREADY_EXISTS";
-  subject: SubjectType;
-}
 
 export interface Info {
   ctx: Ctx;
@@ -23,7 +18,7 @@ function mkMessage(info: Info, cause?: Error | string): string {
   return `${msg}: ${cause}`;
 }
 
-export class AlreadyExists extends VError {
+export class AlreadyExists extends VError implements ToUserFacingError {
   constructor(info: Info, cause?: Error | string) {
     super(
       {

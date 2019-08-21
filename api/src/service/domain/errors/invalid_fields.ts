@@ -24,4 +24,11 @@ export class InvalidFields extends VError {
       mkMessage(info, cause),
     );
   }
+
+  public toUserFacingError(): UserFacingError {
+    return {
+      type: "ALREADY_EXISTS",
+      subject: VError.info(this).subject,
+    };
+  }
 }

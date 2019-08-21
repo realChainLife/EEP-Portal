@@ -12,8 +12,6 @@ interface ErrorBody {
   };
 }
 
-type UserVisibleError = InvalidFields | NotAuthorized | AlreadyExists;
-
 interface InvalidFields {
   type: "INVALID_FIELDS";
   fields: [
