@@ -15,7 +15,7 @@ import * as GlobalPermissions from "./global_permissions";
 import * as Project from "./project";
 import * as ProjectCreated from "./project_created";
 import { ProjectedBudget, projectedBudgetListSchema } from "./projected_budget";
-import { ProjectCreationFailed } from "../errors/project_creation_failed";
+import { ProjectCreationFailed } from "../errors/invalid_fields";
 
 /**
  * Initial data for the new project as given in the request.
