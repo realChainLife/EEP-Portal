@@ -13,7 +13,7 @@ import { ProjectedBudget, projectedBudgetListSchema } from "./projected_budget";
 type eventTypeType = "project_created";
 const eventType: eventTypeType = "project_created";
 
-interface InitialData {
+export interface InitialData {
   id: Project.Id;
   status: "open" | "closed";
   displayName: string;
@@ -33,8 +33,7 @@ const initialDataSchema = Joi.object({
     .valid("open", "closed")
     .required(),
   displayName: Joi.string().required(),
-  description: Joi.string()
-    .allow("")
+  description: Joi.string() /*.allow("")*/
     .required(),
   assignee: Joi.string(),
   thumbnail: Joi.string().allow(""),
@@ -69,7 +68,7 @@ export function createEvent(
   publisher: Identity,
   project: InitialData,
   time: string = new Date().toISOString(),
-): Event {
+): Result.Type<Event> {
   const event = {
     type: eventType,
     source,
@@ -78,10 +77,10 @@ export function createEvent(
     time,
   };
   const validationResult = validate(event);
-  if (Result.isErr(validationResult)) {
-    throw new VError(validationResult, `not a valid ${eventType} event`);
-  }
-  return event;
+  return Result.mapErr(
+    validationResult,
+    error => new VError(error, `not a valid ${eventType} event`),
+  );
 }
 
 export function validate(input: any): Result.Type<Event> {
@@ -109,6 +108,6 @@ export function createFrom(ctx: Ctx, event: Event): Result.Type<Project.Project>
 
   return Result.mapErr(
     Project.validate(project),
-    error => new EventSourcingError({ ctx, event, target: project }, error),
+    error => new ProjectCreationFailed({ ctx, event, target: project }, error),
   );
 }

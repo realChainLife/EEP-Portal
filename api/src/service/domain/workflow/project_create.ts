@@ -15,6 +15,7 @@ import * as GlobalPermissions from "./global_permissions";
 import * as Project from "./project";
 import * as ProjectCreated from "./project_created";
 import { ProjectedBudget, projectedBudgetListSchema } from "./projected_budget";
+import { ProjectCreationFailed } from "../errors/project_creation_failed";
 
 /**
  * Initial data for the new project as given in the request.
@@ -34,23 +35,6 @@ export interface RequestData {
   tags?: string[];
 }
 
-const requestDataSchema = Joi.object({
-  id: Project.idSchema,
-  status: Joi.string().valid("open", "closed"),
-  displayName: Joi.string().required(),
-  description: Joi.string().allow(""),
-  assignee: Joi.string(),
-  thumbnail: Joi.string().allow(""),
-  projectedBudgets: projectedBudgetListSchema,
-  additionData: AdditionalData.schema,
-  tags: Joi.array().items(Project.tagsSchema),
-});
-
-export function validate(input: any): Result.Type<RequestData> {
-  const { value, error } = Joi.validate(input, requestDataSchema);
-  return !error ? value : error;
-}
-
 interface Repository {
   getGlobalPermissions(): Promise<GlobalPermissions.GlobalPermissions>;
   projectExists(projectId: string): Promise<boolean>;
@@ -61,11 +45,10 @@ export async function createProject(
   creatingUser: ServiceUser,
   data: RequestData,
   repository: Repository,
-): Promise<{ newEvents: BusinessEvent[]; errors: Error[] }> {
+): Promise<Result.Type<BusinessEvent[]>> {
   const source = ctx.source;
   const publisher = creatingUser.id;
-
-  const createEvent = ProjectCreated.createEvent(source, publisher, {
+  const requestData = {
     id: data.id || randomString(),
     status: data.status || "open",
     displayName: data.displayName,
@@ -76,7 +59,12 @@ export async function createProject(
     permissions: newDefaultPermissionsFor(creatingUser),
     additionalData: data.additionalData || {},
     tags: data.tags || [],
-  });
+  };
+  const createEvent = ProjectCreated.createEvent(source, publisher, requestData);
+
+  if (Result.isErr(createEvent)) {
+    return new ProjectCreationFailed({ ctx, requestData }, createEvent);
+  }
 
   // Make sure for each organization and currency there is only one entry:
   const badEntry = findDuplicateBudgetEntry(createEvent.project.projectedBudgets);
@@ -86,14 +74,12 @@ export async function createProject(
         badEntry.currencyCode
       }`,
     );
-    return { newEvents: [], errors: [new InvalidCommand(ctx, createEvent, [error])] };
+    return new ProjectCreationFailed({ ctx, requestData }, error);
   }
 
   if (await repository.projectExists(createEvent.project.id)) {
-    return {
-      newEvents: [],
-      errors: [new PreconditionError(ctx, createEvent, "project already exists")],
-    };
+    const error = new PreconditionError(ctx, createEvent, "project already exists");
+    return new ProjectCreationFailed({ ctx, requestData }, error);
   }
 
   // Check authorization (if not root):
@@ -101,20 +87,24 @@ export async function createProject(
     const intent = "global.createProject";
     const permissions = await repository.getGlobalPermissions();
     if (!GlobalPermissions.permits(permissions, creatingUser, [intent])) {
-      return {
-        newEvents: [],
-        errors: [new NotAuthorized({ ctx, userId: creatingUser.id, intent, target: permissions })],
-      };
+      const error = new NotAuthorized({
+        ctx,
+        userId: creatingUser.id,
+        intent,
+        target: permissions,
+      });
+      return new ProjectCreationFailed({ ctx, requestData }, error);
     }
   }
 
   // Check that the event is valid:
   const result = ProjectCreated.createFrom(ctx, createEvent);
   if (Result.isErr(result)) {
-    return { newEvents: [], errors: [new InvalidCommand(ctx, createEvent, [result])] };
+    const error = new InvalidCommand(ctx, createEvent, [result]);
+    return new ProjectCreationFailed({ ctx, requestData }, error);
   }
 
-  return { newEvents: [createEvent], errors: [] };
+  return [createEvent];
 }
 
 function newDefaultPermissionsFor(user: ServiceUser): Permissions {

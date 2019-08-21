@@ -18,7 +18,7 @@ export async function createProject(
   serviceUser: ServiceUser,
   requestData: ProjectCreate.RequestData,
 ): Promise<ResourceMap> {
-  const { newEvents, errors } = await Cache.withCache(conn, ctx, async cache =>
+  const result = await Cache.withCache(conn, ctx, async cache =>
     ProjectCreate.createProject(ctx, serviceUser, requestData, {
       getGlobalPermissions: async () => getGlobalPermissions(conn, ctx, serviceUser),
       projectExists: async projectId => {
@@ -26,18 +26,19 @@ export async function createProject(
       },
     }),
   );
-  if (errors.length > 0) return Promise.reject(errors);
-  if (!newEvents.length) {
+  if (Result.isErr(result)) return Promise.reject(result);
+
+  if (!result.length) {
     const msg = "failed to create project";
     logger.error({ ctx, serviceUser, requestData }, msg);
     throw new Error(msg);
   }
 
-  for (const event of newEvents) {
+  for (const event of result) {
     await store(conn, ctx, event);
   }
 
-  const creationEvent = newEvents.find(x => x.type === "project_created") as ProjectCreated.Event;
+  const creationEvent = result.find(x => x.type === "project_created") as ProjectCreated.Event;
   if (creationEvent === undefined) throw Error(`Assertion: This is a bug.`);
   const resourceIds: ResourceMap = {
     project: { id: creationEvent.project.id },

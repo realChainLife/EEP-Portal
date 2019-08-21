@@ -4,10 +4,26 @@ import logger from "./lib/logger";
 
 interface ErrorBody {
   apiVersion: "1.0";
-  error: {
-    code: number;
-    message: string;
-  };
+  error: ErrorType;
+}
+
+type ErrorType = ProjectCreationFailedWrapper;
+
+interface ProjectCreationFailedWrapper {
+  errorType: "PROJECT_CREATION_FAILED";
+  reason: "INVALID_FIELDS";
+  // invalidFields: [{
+  //   fieldName: string;
+  //   fieldValue: string;
+  // }]
+}
+interface ProjectCreationFailedWrapper {
+  errorType: "PROJECT_CREATION_FAILED";
+  reason: "PROJECT_EXISTS";
+}
+interface ProjectCreationFailedWrapper {
+  errorType: "PROJECT_CREATION_FAILED";
+  reason: "NOT_AUTHORIZED";
 }
 
 export function toHttpError(error: any | any[]): { code: number; body: ErrorBody } {
@@ -45,6 +61,9 @@ function handleError(error: Error): { code: number; message: string } {
 
     case "PreconditionError":
       return { code: 409, message: error.message };
+
+    case "ProjectCreationFailed":
+      return { code: 400, message: error.message };
 
     default:
       return { code: 500, message: error.message };

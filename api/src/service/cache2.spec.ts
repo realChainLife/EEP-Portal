@@ -523,6 +523,10 @@ function addExampleProject(ctx: Ctx, cache: Cache2, projectId: string): ProjectC
     additionalData: {},
   });
 
+  if (Result.isErr(projectCreationEvent)) {
+    throw projectCreationEvent;
+  }
+
   updateAggregates(ctx, cache, [projectCreationEvent]);
 
   return projectCreationEvent;
