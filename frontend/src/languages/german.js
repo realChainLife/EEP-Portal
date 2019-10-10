@@ -236,10 +236,12 @@ const de = {
   },
 
   confirmation: {
-    assigning_text:
-      "Wenn {0} zugewiesen werden soll, benötigt {0} zusätzliche Berechtigungen um die Ressource anzeigen zu können:",
+    permissions_text: `{0} benötigt zusätzliche Berechtigungen um {1} "{2}" sehen zu können.`,
+    assigning_text: `Soll {0} wirklich zum {1} "{2}" zugewiesen werden?`,
     grant_and_assign: "Gewähren & Zuweisen",
-    view_permissions_title: "Vergabe von Lese-Berechtigungen?"
+    additional_permissions_required: "Zusätzliche Berechtigungen benötigt",
+    confirm_assign: "Zuweisung bestätigen",
+    no_permission_warning: "Warnung: Sie haben nicht die Berechtigung, alle aufgelisteten Aktionen auszuführen!"
   },
 
   analytics: {

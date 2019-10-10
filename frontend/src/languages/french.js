@@ -236,11 +236,15 @@ const fr = {
     not_possible_action: "Actions impossibles",
     actions_done: "{0} de {1} actions realisées"
   },
+
   confirmation: {
-    assigning_text:
-      "Si {0} doit être attribué, {0} nécessite des autorisations supplémentaires pour afficher la ressource.:",
+    permissions_text: `{0} a besoin d'autorisations supplémentaires pour voir {1} "{2}".`,
+    assigning_text: `
+    Voudriez-vous vraiment assigner {0} à {1} "{2}"?`,
     grant_and_assign: "Accorder & Assigner",
-    view_permissions_title: "Accorder des autorisations d'affichage?"
+    additional_permissions_required: "Autorisations supplémentaires requises",
+    confirm_assign: "Confirmer assigner",
+    no_permission_warning: "Avertissement: Vous n'êtes pas autorisé à exécuter toutes les actions répertoriées!"
   },
 
   analytics: {

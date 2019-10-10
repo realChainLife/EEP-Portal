@@ -237,9 +237,12 @@ const pt = {
   },
 
   confirmation: {
-    assigning_text: "Se {0} for designado, {0} requer permissões adicionais para visualizar o recurso.:",
+    permissions_text: `{0} precisa de permissões adicionais para visualizar {1} "{2}".`,
+    assigning_text: `Você realmente gostaria de atribuir {0} ao {1} "{2}"?`,
     grant_and_assign: "Conceder & Atribuir",
-    view_permissions_title: "Conceder permissões de visualização"
+    additional_permissions_required: "Permissões adicionais necessárias",
+    confirm_assign: "Confirmar atribuição",
+    no_permission_warning: "Aviso: você não tem permissão para executar todas as ações listadas!"
   },
 
   analytics: {

@@ -235,9 +235,12 @@ const en = {
     actions_done: "{0} from {1} actions done"
   },
   confirmation: {
-    assigning_text: "{0} needs additional permissions to view the {1}:",
+    permissions_text: `{0} needs additional permissions to view {1} "{2}".`,
+    assigning_text: `Would you really want to assign {0} to {1} "{2}"?`,
     grant_and_assign: "Grant & Assign",
-    view_permissions_title: "Additional permissions required"
+    additional_permissions_required: "Additional permissions required",
+    confirm_assign: "Confirm assign",
+    no_permission_warning: "Warning: You don't have permission to execute all listed actions!"
   },
 
   analytics: {

@@ -1,7 +1,18 @@
 import { saveAs } from "file-saver/FileSaver";
 import _isEmpty from "lodash/isEmpty";
-import { all, call, delay, put, select, takeEvery, takeLatest, takeLeading } from "redux-saga/effects";
-
+import {
+  all,
+  call,
+  cancel,
+  delay,
+  put,
+  race,
+  select,
+  take,
+  takeEvery,
+  takeLatest,
+  takeLeading
+} from "redux-saga/effects";
 import Api from "./api.js";
 import { getExchangeRates } from "./getExchangeRates";
 import { fromAmountString } from "./helper.js";
@@ -16,6 +27,7 @@ import {
   GET_SUBPROJECT_KPIS_FAIL,
   GET_SUBPROJECT_KPIS_SUCCESS
 } from "./pages/Analytics/actions.js";
+import { CONFIRM_INTENT, INTENT_CANCELED, INTENT_CONFIRMED } from "./pages/Confirmation/actions.js";
 import { CLEAR_DOCUMENTS, VALIDATE_DOCUMENT, VALIDATE_DOCUMENT_SUCCESS } from "./pages/Documents/actions";
 import { cancelDebounce, hideLoadingIndicator, showLoadingIndicator } from "./pages/Loading/actions.js";
 import {
@@ -1456,8 +1468,25 @@ export function* assignSubprojectSaga({ projectId, subprojectId, assigneeId, sho
   }, showLoading);
 }
 
-export function* assignProjectSaga({ projectId, assigneeId, showLoading }) {
+export function* assignProjectSaga({ projectId, projectDisplayName, assigneeId, assigneeDisplayName, showLoading }) {
   yield execute(function*() {
+    yield put({
+      type: CONFIRM_INTENT,
+      intent: "project.assign",
+      payload: {
+        project: { id: projectId, displayName: projectDisplayName },
+        assignee: { id: assigneeId, displayName: assigneeDisplayName }
+      }
+    });
+    const { canceled } = yield race({
+      // TODO: What if race never gets a winner?
+      confirmed: take(INTENT_CONFIRMED),
+      canceled: take(INTENT_CANCELED)
+    });
+    if (canceled) {
+      yield cancel();
+    }
+
     yield callApi(api.assignProject, projectId, assigneeId);
     yield put({
       type: ASSIGN_PROJECT_SUCCESS

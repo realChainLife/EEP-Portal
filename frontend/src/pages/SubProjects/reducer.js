@@ -75,14 +75,6 @@ const defaultState = fromJS({
   projectAssignee: "",
   dialogTitle: strings.subproject.subproject_add_title,
   isFetchingProjectPermissions: false,
-  confirmation: {
-    visible: false,
-    actions: [],
-    assignee: {
-      id: "",
-      displayName: ""
-    }
-  },
   permittedToGrant: false,
   applyActions: true
 });
