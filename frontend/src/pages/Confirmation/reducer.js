@@ -11,7 +11,9 @@ const defaultState = fromJS({
   intent: "",
   permissions: { project: {}, subproject: {}, workflowitem: {} },
   payload: {},
-  isFetchingPermissions: false
+  isFetchingProjectPermissions: false,
+  isFetchingSubprojectPermissions: false,
+  isFetchingWorkflowitemPermissions: false
 });
 
 export default function confirmationReducer(state = defaultState, action) {
@@ -26,34 +28,42 @@ export default function confirmationReducer(state = defaultState, action) {
       return state.merge({
         open: defaultState.open,
         intent: defaultState.intent,
+        permissions: defaultState, // TODO: don't fetch permissions every time confirmation dialog opens
         payload: defaultState.payload,
-        isFetchingPermissions: defaultState.isFetchingPermissions
+        isFetchingProjectPermissions: defaultState.isFetchingProjectPermissions,
+        isFetchingSubprojectPermissions: defaultState.isFetchingSubprojectPermissions,
+        isFetchingWorkflowitemPermissions: defaultState.isFetchingWorkflowitemPermissions
       });
     case INTENT_CANCELED:
       return state.merge({
         open: defaultState.open,
         intent: defaultState.intent,
+        permissions: defaultState, // TODO: don't fetch permissions every time confirmation dialog opens
         payload: defaultState.payload,
-        isFetchingPermissions: defaultState.isFetchingPermissions
+        isFetchingProjectPermissions: defaultState.isFetchingProjectPermissions,
+        isFetchingSubprojectPermissions: defaultState.isFetchingSubprojectPermissions,
+        isFetchingWorkflowitemPermissions: defaultState.isFetchingWorkflowitemPermissions
       });
     case FETCH_PROJECT_PERMISSIONS:
-      return state.set("isFetchingPermissions", true);
+      return state.set("isFetchingProjectPermissions", true);
     case FETCH_PROJECT_PERMISSIONS_SUCCESS:
       return state
         .setIn(["permissions", "project"], fromJS(action.permissions))
-        .set("isFetchingPermissions", defaultState.isFetchingPermissions);
+        .set("isFetchingProjectPermissions", defaultState.isFetchingProjectPermissions);
     case FETCH_SUBPROJECT_PERMISSIONS:
-      return state.set("isFetchingPermissions", true);
+      return state.set("isFetchingSubprojectPermissions", true);
     case FETCH_SUBPROJECT_PERMISSIONS_SUCCESS:
       return state
         .setIn(["permissions", "subproject"], fromJS(action.permissions))
-        .set("isFetchingPermissions", defaultState.isFetchingPermissions);
+        .set("isFetchingSubprojectPermissions", defaultState.isFetchingSubprojectPermissions);
     case FETCH_WORKFLOWITEM_PERMISSIONS:
-      return state.set("isFetchingPermissions", true).setIn(["permissions", "workflowitemId"], action.workflowitemId);
+      return state
+        .set("isFetchingWorkflowitemPermissions", true)
+        .setIn(["permissions", "workflowitemId"], action.workflowitemId);
     case FETCH_WORKFLOWITEM_PERMISSIONS_SUCCESS:
       return state
         .setIn(["permissions", "workflowitem"], fromJS(action.permissions))
-        .set("isFetchingPermissions", defaultState.isFetchingPermissions);
+        .set("isFetchingWorkflowitemPermissions", defaultState.isFetchingWorkflowitemPermissions);
     case LOGOUT:
       return defaultState;
     default:

@@ -36,7 +36,12 @@ const styles = {
 const ConfirmationDialog = props => {
   const { classes, open = false, intent, payload, permissions, confirmingUser } = props;
   // If permissions are not fetched yet show Loading indicator
-  if (props.isFetchingPermissions || _isEmpty(props.permissions.project)) {
+  if (
+    props.isFetchingProjectPermissions ||
+    props.isFetchingSubprojectPermissions ||
+    props.isFetchingWorkflowitemPermissions ||
+    _isEmpty(props.permissions.project)
+  ) {
     return (
       <Dialog classes={{ paper: classes.paperRoot }} open={open} data-test="confirmation-dialog">
         <div className={classes.loadingContainer}>
@@ -65,49 +70,169 @@ const ConfirmationDialog = props => {
   // The payload is defined by the saga which triggers the CONFIRM_INTENT-action
   switch (intent) {
     case "project.assign":
-      permittedToGrant = permissions.project["project.intent.grantPermission"].includes(confirmingUser);
-      actions = getMissingViewPermissions({ project: permissions.project }, payload.assignee.id, {
+      {
+        // TODO: Verify payload
+        // Parse payload variables
+        const projectPermissions = { project: permissions.project };
+        const project = {
+          id: payload.project.id,
+          displayName: payload.project.displayName
+        };
+        // If view permissions are missing the required actions return
+        actions = getMissingViewPermissions(projectPermissions, payload.assignee.id, project);
+        // The actions require grant permissions
+        permittedToGrant = permissions.project["project.intent.grantPermission"].includes(confirmingUser);
+
+        if (!_isEmpty(actions)) {
+          title = strings.confirmation.additional_permissions_required;
+          confirmButtonText = strings.confirmation.grant_and_assign;
+          const dialogText = formatString(
+            strings.confirmation.permissions_text,
+            payload.assignee.displayName,
+            strings.common.project,
+            payload.project.displayName
+          );
+          content = (
+            <>
+              <Typography>{dialogText}</Typography>
+              <ActionsTable actions={actions} />
+            </>
+          );
+        } else {
+          title = strings.confirmation.confirm_assign;
+          confirmButtonText = strings.common.assign;
+          const dialogText = formatString(
+            strings.confirmation.assigning_text,
+            payload.assignee.displayName,
+            strings.common.project,
+            payload.project.displayName
+          );
+          content = <Typography>{dialogText}</Typography>;
+        }
+      }
+      break;
+
+    case "subproject.assign": {
+      // TODO: Verify payload
+      // Parse payload variables
+      const subprojectPermissions = { project: permissions.project, subproject: permissions.subproject };
+      const project = {
         id: payload.project.id,
         displayName: payload.project.displayName
-      });
+      };
+      const subproject = {
+        id: payload.subproject.id,
+        displayName: payload.subproject.displayName
+      };
+      // If view permissions are missing the required actions return
+      actions = getMissingViewPermissions(subprojectPermissions, payload.assignee.id, project, subproject);
+      // The actions require grant permissions
+      // TODO: if only subproject actions shall be executed only subproject permissions shall be checked
+      permittedToGrant = isPermittedToGrant(confirmingUser, subprojectPermissions, actions);
+
       if (!_isEmpty(actions)) {
         title = strings.confirmation.additional_permissions_required;
         confirmButtonText = strings.confirmation.grant_and_assign;
+        const dialogText = formatString(
+          strings.confirmation.permissions_text,
+          payload.assignee.displayName,
+          strings.common.subproject,
+          payload.subproject.displayName
+        );
         content = (
           <>
-            <Typography>
-              {formatString(
-                strings.confirmation.permissions_text,
-                payload.assignee.displayName,
-                "project",
-                payload.project.displayName
-              )}
-            </Typography>
+            <Typography>{dialogText}</Typography>
             <ActionsTable actions={actions} />
           </>
         );
       } else {
         title = strings.confirmation.confirm_assign;
         confirmButtonText = strings.common.assign;
-        content = (
-          <Typography>
-            {formatString(
-              strings.confirmation.assigning_text,
-              payload.assignee.displayName,
-              "project",
-              payload.project.displayName
-            )}
-          </Typography>
+        const dialogText = formatString(
+          strings.confirmation.assigning_text,
+          payload.assignee.displayName,
+          strings.common.subproject,
+          payload.subproject.displayName
         );
+        content = <Typography>{dialogText}</Typography>;
       }
       break;
+    }
+    case "workflowitem.assign": {
+      // TODO: Verify payload
+      // Parse payload variables
+      const workflowitemPermissions = {
+        project: permissions.project,
+        subproject: permissions.subproject,
+        workflowitem: permissions.workflowitem
+      };
+      const project = {
+        id: payload.project.id,
+        displayName: payload.project.displayName
+      };
+      const subproject = {
+        id: payload.subproject.id,
+        displayName: payload.subproject.displayName
+      };
+      const workflowitem = {
+        id: payload.workflowitem.id,
+        displayName: payload.workflowitem.displayName
+      };
+      // If view permissions are missing the required actions return
+      actions = getMissingViewPermissions(
+        workflowitemPermissions,
+        payload.assignee.id,
+        project,
+        subproject,
+        workflowitem
+      );
+      // The actions require grant permissions
+      // TODO: if only subproject actions shall be executed only subproject permissions shall be checked
+      permittedToGrant = isPermittedToGrant(confirmingUser, workflowitemPermissions, actions);
+
+      if (!_isEmpty(actions)) {
+        title = strings.confirmation.additional_permissions_required;
+        confirmButtonText = strings.confirmation.grant_and_assign;
+        const dialogText = formatString(
+          strings.confirmation.permissions_text,
+          payload.assignee.displayName,
+          strings.common.workflowitem,
+          payload.workflowitem.displayName
+        );
+        content = (
+          <>
+            <Typography>{dialogText}</Typography>
+            <ActionsTable actions={actions} />
+          </>
+        );
+      } else {
+        title = strings.confirmation.confirm_assign;
+        confirmButtonText = strings.common.assign;
+        const dialogText = formatString(
+          strings.confirmation.assigning_text,
+          payload.assignee.displayName,
+          strings.common.workflowitem,
+          payload.workflowitem.displayName
+        );
+        content = <Typography>{dialogText}</Typography>;
+      }
+      break;
+    }
     default:
-      title = "Are you sure?";
+      title = "Not implemented confirmation";
       content = "Confirmation Dialog for " + intent + " is not implemented yet";
       break;
   }
   onConfirm = () => {
-    if (!_isEmpty(actions)) props.executeConfirmedActions(actions, payload.project.id, payload.subprojectid);
+    const subproject = payload.subproject;
+    const workflowitem = payload.workflowitem;
+    if (!_isEmpty(actions))
+      props.executeConfirmedActions(
+        actions,
+        payload.project.id,
+        subproject ? subproject.id : undefined,
+        workflowitem ? workflowitem.id : undefined
+      );
     props.onConfirm();
   };
 
@@ -127,5 +252,20 @@ const ConfirmationDialog = props => {
     </Dialog>
   );
 };
+
+function isPermittedToGrant(identity, permissions, actions) {
+  const resourcesToCheck = actions.reduce((resourcesToCheck, action) => {
+    const resource = action.intent.split(".")[0];
+    if (!resourcesToCheck.includes(resource)) {
+      resourcesToCheck.push(resource);
+    }
+    return resourcesToCheck;
+  }, []);
+
+  resourcesToCheck.forEach(resource => {
+    if (!permissions[resource][`${resource}.intent.grantPermission`].includes(identity)) return false;
+  });
+  return true;
+}
 
 export default withStyles(styles)(ConfirmationDialog);

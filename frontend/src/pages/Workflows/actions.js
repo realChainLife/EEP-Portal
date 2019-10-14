@@ -288,22 +288,49 @@ export function revokeWorkflowItemPermission(
   };
 }
 
-export function assignWorkflowItem(projectId, subprojectId, workflowitemId, assigneeId, showLoading = false) {
+export function assignWorkflowItem(
+  projectId,
+  projectDisplayName,
+  subprojectId,
+  subprojectDisplayName,
+  workflowitemId,
+  workflowitemDisplayName,
+  assigneeId,
+  assigneeDisplayName,
+  showLoading = false
+) {
   return {
     type: ASSIGN_WORKFLOWITEM,
     projectId,
+    projectDisplayName,
     subprojectId,
+    subprojectDisplayName,
     workflowitemId,
-    assigneeId
+    workflowitemDisplayName,
+    assigneeId,
+    assigneeDisplayName,
+    showLoading
   };
 }
 
-export function assignSubproject(projectId, subprojectId, assigneeId, showLoading = false) {
+export function assignSubproject(
+  projectId,
+  projectDisplayName,
+  subprojectId,
+  subprojectDisplayName,
+  assigneeId,
+  assigneeDisplayName,
+  showLoading = false
+) {
   return {
     type: ASSIGN_SUBPROJECT,
     projectId,
+    projectDisplayName,
     subprojectId,
-    assigneeId
+    subprojectDisplayName,
+    assigneeId,
+    assigneeDisplayName,
+    showLoading
   };
 }
 

@@ -1435,8 +1435,36 @@ export function* submitBatchForWorkflowSaga({ projectId, subprojectId, actions, 
   }, showLoading);
 }
 
-export function* assignWorkflowItemSaga({ projectId, subprojectId, workflowitemId, assigneeId, showLoading }) {
+export function* assignWorkflowItemSaga({
+  projectId,
+  projectDisplayName,
+  subprojectId,
+  subprojectDisplayName,
+  workflowitemId,
+  workflowitemDisplayName,
+  assigneeId,
+  assigneeDisplayName,
+  showLoading
+}) {
   yield execute(function*() {
+    yield put({
+      type: CONFIRM_INTENT,
+      intent: "workflowitem.assign",
+      payload: {
+        project: { id: projectId, displayName: projectDisplayName },
+        subproject: { id: subprojectId, displayName: subprojectDisplayName },
+        workflowitem: { id: workflowitemId, displayName: workflowitemDisplayName },
+        assignee: { id: assigneeId, displayName: assigneeDisplayName }
+      }
+    });
+    const { canceled } = yield race({
+      confirmed: take(INTENT_CONFIRMED),
+      canceled: take(INTENT_CANCELED)
+    });
+    if (canceled) {
+      yield cancel();
+    }
+
     yield callApi(api.assignWorkflowItem, projectId, subprojectId, workflowitemId, assigneeId);
     yield put({
       type: ASSIGN_WORKFLOWITEM_SUCCESS,
@@ -1472,7 +1500,6 @@ export function* assignSubprojectSaga({
       }
     });
     const { canceled } = yield race({
-      // TODO: What if race never gets a winner?
       confirmed: take(INTENT_CONFIRMED),
       canceled: take(INTENT_CANCELED)
     });
@@ -1505,7 +1532,6 @@ export function* assignProjectSaga({ projectId, projectDisplayName, assigneeId, 
       }
     });
     const { canceled } = yield race({
-      // TODO: What if race never gets a winner?
       confirmed: take(INTENT_CONFIRMED),
       canceled: take(INTENT_CANCELED)
     });

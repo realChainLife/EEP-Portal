@@ -53,6 +53,7 @@ const mapDispatchToProps = dispatch => {
     hideWorkflowItemPreview: () => dispatch(hideWorkflowItemPreview()),
     grantWorkflowItemPermission: (pId, sId, wId, permission, user) =>
       dispatch(grantWorkflowItemPermission(pId, sId, wId, permission, user, true)),
+    // TODO: change assignWorkflowitem to refactored action
     assignWorkflow: (projectId, subProjectId, workflowId, identity) =>
       dispatch(assignWorkflowItem(projectId, subProjectId, workflowId, identity)),
     resetSucceededWorkflowitems: () => dispatch(resetSucceededWorkflowitems()),

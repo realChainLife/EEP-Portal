@@ -390,7 +390,6 @@ export const WorkflowItem = SortableElement(
     const allowedIntents = workflow.allowedIntents;
     const workflowSelectable = isWorkflowSelectable(currentWorkflowSelectable, workflowSortEnabled, status);
     const tableStyle = styles[status];
-    const subprojectId = props.id;
     const itemStyle = workflowSelectable
       ? {}
       : {
@@ -435,8 +434,6 @@ export const WorkflowItem = SortableElement(
             </div>
             <div style={{ ...styles.listText, ...styles.workflowCell }} data-test="outside">
               <WorkflowAssigneeContainer
-                projectId={parentProject ? parentProject.id : ""}
-                subprojectId={subprojectId}
                 workflowitemId={id}
                 workflowitemDisplayName={displayName}
                 disabled={!canAssign}
