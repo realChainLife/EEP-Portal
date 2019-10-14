@@ -10,18 +10,48 @@ import ActionsTable from "./ActionsTable";
 import _isEmpty from "lodash/isEmpty";
 import { getMissingViewPermissions } from "./SideEffectActions";
 import WarningTypography from "./WarningTypography";
-import { Typography } from "@material-ui/core";
+import { Typography, CircularProgress } from "@material-ui/core";
 import { formatString } from "../../helper";
 
 const styles = {
   paperRoot: {
     width: "100%",
     overflow: "visible"
+  },
+  loadingContainer: {
+    display: "flex",
+    flexDirection: "row",
+    width: "100%",
+    alignItems: "top",
+    justifyContent: "center",
+    marginRight: "50px"
+  },
+  loadingIndicator: {
+    display: "inline-block",
+    position: "relative",
+    padding: "50px"
   }
 };
 
 const ConfirmationDialog = props => {
   const { classes, open = false, intent, payload, permissions, confirmingUser } = props;
+  // If permissions are not fetched yet show Loading indicator
+  if (props.isFetchingPermissions || _isEmpty(props.permissions.project)) {
+    return (
+      <Dialog classes={{ paper: classes.paperRoot }} open={open} data-test="confirmation-dialog">
+        <div className={classes.loadingContainer}>
+          <CircularProgress
+            size={50}
+            left={0}
+            top={0}
+            percentage={50}
+            color="primary"
+            className={classes.loadingIndicator}
+          />
+        </div>
+      </Dialog>
+    );
+  }
   let actions,
     title,
     content,
@@ -36,7 +66,7 @@ const ConfirmationDialog = props => {
   switch (intent) {
     case "project.assign":
       permittedToGrant = permissions.project["project.intent.grantPermission"].includes(confirmingUser);
-      actions = getMissingViewPermissions(permissions, payload.assignee.id, {
+      actions = getMissingViewPermissions({ project: permissions.project }, payload.assignee.id, {
         id: payload.project.id,
         displayName: payload.project.displayName
       });

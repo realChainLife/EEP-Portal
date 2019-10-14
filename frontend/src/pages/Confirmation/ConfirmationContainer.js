@@ -1,27 +1,32 @@
+import _isEmpty from "lodash/isEmpty";
 import React, { Component } from "react";
 import { connect } from "react-redux";
 import { toJS } from "../../helper";
-import ConfirmationDialog from "./ConfirmationDialog";
-import { confirmConfirmation, cancelConfirmation, executeConfirmedActions } from "./actions";
 import { fetchProjectPermissions } from "../Overview/actions";
 import { fetchSubProjectPermissions } from "../SubProjects/actions";
 import { fetchWorkflowItemPermissions } from "../Workflows/actions";
+import { cancelConfirmation, confirmConfirmation, executeConfirmedActions } from "./actions";
+import ConfirmationDialog from "./ConfirmationDialog";
 
 class ConfirmationContainer extends Component {
+  componentDidUpdate() {
+    if (_isEmpty(this.props.permissions.project)) this.fetchPermissions(this.props.intentToConfirm);
+  }
+
   fetchPermissions(intentToConfirm) {
     const { payload } = this.props;
-    switch (intentToConfirm.split()[0]) {
+    switch (intentToConfirm.split(".")[0]) {
       case "project":
-        this.props.fetchProjectPermissions(payload.projectId);
+        this.props.fetchProjectPermissions(payload.project.id);
         break;
       case "subproject":
-        this.props.fetchProjectPermissions(payload.projectId);
-        this.props.fetchSubprojectPermissions(payload.projectId, payload.subprojectId);
+        this.props.fetchProjectPermissions(payload.project.id);
+        this.props.fetchSubprojectPermissions(payload.project.id, payload.subproject.id);
         break;
       case "workflowitem":
-        this.props.fetchProjectPermissions(payload.projectId);
-        this.props.fetchSubprojectPermissions(payload.projectId, payload.subprojectId);
-        this.props.fetchWorkflowitemPermissions(payload.projectId, payload.subprojectId, payload.workflowitemId);
+        this.props.fetchProjectPermissions(payload.project.id);
+        this.props.fetchSubprojectPermissions(payload.project.id, payload.subproject.id);
+        this.props.fetchWorkflowitemPermissions(payload.project.id, payload.subproject.id, payload.workflowitem.id);
         break;
       default:
         break;
@@ -30,20 +35,21 @@ class ConfirmationContainer extends Component {
 
   render() {
     if (this.props.confirmationDialogOpen) {
-      this.fetchPermissions(this.props.intentToConfirm);
+      return (
+        <ConfirmationDialog
+          open={this.props.confirmationDialogOpen}
+          intent={this.props.intentToConfirm}
+          onConfirm={this.props.confirmConfirmation}
+          onCancel={this.props.cancelConfirmation}
+          executeConfirmedActions={this.props.executeConfirmedActions}
+          payload={this.props.payload}
+          permissions={this.props.permissions}
+          confirmingUser={this.props.confirmingUser}
+          isFetchingPermissions={this.props.isFetchingPermissions}
+        />
+      );
     }
-    return (
-      <ConfirmationDialog
-        open={this.props.confirmationDialogOpen}
-        intent={this.props.intentToConfirm}
-        onConfirm={this.props.confirmConfirmation}
-        onCancel={this.props.cancelConfirmation}
-        executeConfirmedActions={this.props.executeConfirmedActions}
-        payload={this.props.payload}
-        permissions={this.props.permissions}
-        confirmingUser={this.props.confirmingUser}
-      />
-    );
+    return null;
   }
 }
 
@@ -65,7 +71,8 @@ const mapStateToProps = state => {
     confirmDisabled: state.getIn(["confirmation", "disabled"]),
     payload: state.getIn(["confirmation", "payload"]),
     permissions: state.getIn(["confirmation", "permissions"]),
-    confirmingUser: state.getIn(["login", "id"])
+    confirmingUser: state.getIn(["login", "id"]),
+    isFetchingPermissions: state.getIn(["confirmation", "isFetchingPermissions"])
   };
 };
 

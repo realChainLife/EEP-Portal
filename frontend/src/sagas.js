@@ -1452,8 +1452,34 @@ export function* assignWorkflowItemSaga({ projectId, subprojectId, workflowitemI
   }, showLoading);
 }
 
-export function* assignSubprojectSaga({ projectId, subprojectId, assigneeId, showLoading }) {
+export function* assignSubprojectSaga({
+  projectId,
+  projectDisplayName,
+  subprojectId,
+  subprojectDisplayName,
+  assigneeId,
+  assigneeDisplayName,
+  showLoading
+}) {
   yield execute(function*() {
+    yield put({
+      type: CONFIRM_INTENT,
+      intent: "subproject.assign",
+      payload: {
+        project: { id: projectId, displayName: projectDisplayName },
+        subproject: { id: subprojectId, displayName: subprojectDisplayName },
+        assignee: { id: assigneeId, displayName: assigneeDisplayName }
+      }
+    });
+    const { canceled } = yield race({
+      // TODO: What if race never gets a winner?
+      confirmed: take(INTENT_CONFIRMED),
+      canceled: take(INTENT_CANCELED)
+    });
+    if (canceled) {
+      yield cancel();
+    }
+
     yield callApi(api.assignSubproject, projectId, subprojectId, assigneeId);
     yield put({
       type: ASSIGN_SUBPROJECT_SUCCESS
