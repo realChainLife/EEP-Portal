@@ -1,5 +1,4 @@
 import { fromJS } from "immutable";
-
 import strings from "../../localizeStrings";
 import { LOGOUT } from "../Login/actions";
 import { HIDE_HISTORY } from "../Notifications/actions";
@@ -12,7 +11,6 @@ import {
   FETCH_NEXT_PROJECT_HISTORY_PAGE_SUCCESS,
   FETCH_SUBPROJECT_PERMISSIONS_SUCCESS,
   HIDE_PROJECT_ASSIGNEES,
-  HIDE_PROJECT_CONFIRMATION_DIALOG,
   HIDE_SUBPROJECT_ADDITIONAL_DATA,
   HIDE_SUBPROJECT_DIALOG,
   HIDE_SUBPROJECT_PERMISSIONS,
@@ -20,7 +18,6 @@ import {
   REMOVE_TEMPORARY_SUBPROJECT_PERMISSION,
   SET_TOTAL_PROJECT_HISTORY_ITEM_COUNT,
   SHOW_PROJECT_ASSIGNEES,
-  SHOW_PROJECT_CONFIRMATION_DIALOG,
   SHOW_SUBPROJECT_ADDITIONAL_DATA,
   SHOW_SUBPROJECT_CREATE,
   SHOW_SUBPROJECT_EDIT,
@@ -29,8 +26,7 @@ import {
   SUBPROJECT_CURRENCY,
   SUBPROJECT_DELETED_PROJECTED_BUDGET,
   SUBPROJECT_NAME,
-  SUBPROJECT_PROJECTED_BUDGETS,
-  TRIGGER_APPLY_ACTIONS
+  SUBPROJECT_PROJECTED_BUDGETS
 } from "./actions";
 
 const historyPageSize = 50;
@@ -73,10 +69,7 @@ const defaultState = fromJS({
   idForPermissions: "",
   showProjectAssignees: false,
   projectAssignee: "",
-  dialogTitle: strings.subproject.subproject_add_title,
-  isFetchingProjectPermissions: false,
-  permittedToGrant: false,
-  applyActions: true
+  dialogTitle: strings.subproject.subproject_add_title
 });
 
 export default function detailviewReducer(state = defaultState, action) {
@@ -109,33 +102,12 @@ export default function detailviewReducer(state = defaultState, action) {
         idForInfo: fromJS(action.id),
         isSubProjectAdditionalDataShown: true
       });
-    case SHOW_PROJECT_CONFIRMATION_DIALOG:
-      return state.merge({
-        confirmation: {
-          visible: true,
-          actions: fromJS(action.actions),
-          assignee: fromJS(action.assignee)
-        },
-        permittedToGrant: action.permittedToGrant,
-        applyActions: true
-      });
-    case HIDE_PROJECT_CONFIRMATION_DIALOG:
-      return state.merge({
-        confirmation: defaultState.get("confirmation"),
-        applyActions: true
-      });
-    case TRIGGER_APPLY_ACTIONS:
-      return state.set("applyActions", !state.get("applyActions"));
     case FETCH_SUBPROJECT_PERMISSIONS_SUCCESS:
       return state
         .setIn(["permissions", "subproject"], fromJS(action.permissions))
         .set("temporaryPermissions", fromJS(action.permissions));
-    case FETCH_PROJECT_PERMISSIONS:
-      return state.set("isFetchingProjectPermissions", true);
     case FETCH_PROJECT_PERMISSIONS_SUCCESS:
-      return state
-        .setIn(["permissions", "project"], fromJS(action.permissions))
-        .set("isFetchingProjectPermissions", false);
+      return state.setIn(["permissions", "project"], fromJS(action.permissions));
     case HIDE_SUBPROJECT_PERMISSIONS:
       return state.merge({
         idForPermissions: defaultState.get("idForPermissions"),
