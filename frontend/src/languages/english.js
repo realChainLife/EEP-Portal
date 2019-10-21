@@ -228,7 +228,7 @@ const en = {
   preview: {
     preview: "Preview",
     assign_action_text: "assign {0}",
-    grant_permission_action_text: "grant {0}",
+    grant_permission_action_text: "grant {0} to {1}",
     revoke_permission_action_text: "revoke {0} from {1}",
     possible_action: "Possible actions",
     not_possible_action: "Not possible actions",
