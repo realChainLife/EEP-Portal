@@ -40,6 +40,7 @@ const defaultState = fromJS({
     tags: []
   },
   idForPermissions: "",
+  displayNameForPermissions: "",
   permissions: { project: {} },
   temporaryPermissions: {},
   permissionDialogShown: false,
@@ -74,10 +75,15 @@ export default function overviewReducer(state = defaultState, action) {
         editDialogShown: true
       });
     case SHOW_PROJECT_PERMISSIONS:
-      return state.merge({ idForPermissions: action.id, permissionDialogShown: true });
+      return state.merge({
+        idForPermissions: action.id,
+        displayNameForPermissions: action.displayName,
+        permissionDialogShown: true
+      });
     case HIDE_PROJECT_PERMISSIONS:
       return state.merge({
-        idForPermissions: defaultState.get("id"),
+        idForPermissions: defaultState.get("idForPermissions"),
+        displayNameForPermissions: defaultState.get("displayNameForPermissions"),
         permissionDialogShown: defaultState.get("permissionDialogShown"),
         permissions: defaultState.get("permissions"),
         temporaryPermissions: defaultState.get("temporaryPermissions")

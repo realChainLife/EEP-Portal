@@ -49,17 +49,10 @@ function parseAction(permissions, resource, action, id, displayName, identity) {
   let missingPermissions = [];
 
   if (permissions[viewSummary] === undefined || !permissions[viewSummary].includes(identity)) {
-    missingPermissions.push({ action, id, displayName, intent: viewSummary, identity });
+    missingPermissions.push({ type: action, id, displayName, intent: viewSummary, identity });
   }
   if (permissions[viewDetails] === undefined || !permissions[viewDetails].includes(identity)) {
-    missingPermissions.push({ action, id, displayName, intent: viewDetails, identity });
+    missingPermissions.push({ type: action, id, displayName, intent: viewDetails, identity });
   }
   return missingPermissions;
 }
-export const shortenedDisplayName = displayName => {
-  const maxLength = 50;
-  if (displayName.length > maxLength) {
-    return displayName.slice(0, maxLength) + "...";
-  }
-  return displayName;
-};

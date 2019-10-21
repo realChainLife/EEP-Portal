@@ -51,7 +51,7 @@ const mapDispatchToProps = dispatch => {
       dispatch(showEditDialog(id, displayName, description, thumbnail, projectedBudgets, tags)),
 
     fetchAllProjects: showLoading => dispatch(fetchAllProjects(showLoading)),
-    showProjectPermissions: id => dispatch(showProjectPermissions(id)),
+    showProjectPermissions: (id, displayName) => dispatch(showProjectPermissions(id, displayName)),
     showProjectAdditionalData: id => dispatch(showProjectAdditionalData(id)),
     hideProjectAdditionalData: () => dispatch(hideProjectAdditionalData()),
     closeSearchBar: () => {

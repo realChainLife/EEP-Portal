@@ -33,6 +33,98 @@ const styles = {
   }
 };
 
+const createActions = (oldPermissions, newPermissions, project, subproject = {}, workflowitem = {}) => {
+  const actions = [];
+  Object.keys(oldPermissions).forEach(key => {
+    let resource;
+    const resourceString = key.split(".")[0];
+    switch (resourceString) {
+      case "project":
+        resource = project;
+        break;
+      case "subproject":
+        resource = subproject;
+        break;
+      case "workflowitem":
+        resource = workflowitem;
+        break;
+      default:
+        resource = project;
+        break;
+    }
+    const permissionIds = oldPermissions[key];
+    const temporaryPermissionIds = newPermissions[key];
+
+    const revokeIds = permissionIds.filter(id => !temporaryPermissionIds.includes(id));
+    if (revokeIds.length > 0)
+      revokeIds.forEach(id =>
+        actions.push({
+          type: "revoke",
+          intent: key,
+          identity: id,
+          displayName: resource.displayName,
+          id: resource.id
+        })
+      );
+    const grantIds = temporaryPermissionIds.filter(id => !permissionIds.includes(id));
+    if (grantIds.length > 0) {
+      grantIds.forEach(id =>
+        actions.push({
+          type: "grant",
+          intent: key,
+          identity: id,
+          displayName: resource.displayName,
+          id: resource.id
+        })
+      );
+
+      // If it's a write/admin permission, check the view permissions and create actions if necessary
+      const intent = key.split(".")[1];
+      if (intent !== "viewSummary" && intent !== "viewDetails") {
+        let idsWithoutViewPerm;
+        const viewSummaryPerm = `${resourceString}.viewSummary`;
+        const viewDetailsPerm = `${resourceString}.viewDetails`;
+        const viewPermissionsPerm = `${resourceString}.intent.listPermissions`;
+
+        idsWithoutViewPerm = grantIds.filter(id => !oldPermissions[viewSummaryPerm].includes(id));
+        idsWithoutViewPerm.forEach(id =>
+          actions.push({
+            type: "grant",
+            intent: viewSummaryPerm,
+            identity: id,
+            displayName: resource.displayName,
+            id: resource.id
+          })
+        );
+        idsWithoutViewPerm = grantIds.filter(id => !oldPermissions[viewDetailsPerm].includes(id));
+        idsWithoutViewPerm.forEach(id =>
+          actions.push({
+            type: "grant",
+            intent: viewDetailsPerm,
+            identity: id,
+            displayName: resource.displayName,
+            id: resource.id
+          })
+        );
+        // If true additionally grant "viewPermission" permission
+        if (key.split(".")[2] === "grantPermission" || key.split(".")[2] === "revokePermission") {
+          idsWithoutViewPerm = grantIds.filter(id => !oldPermissions[viewPermissionsPerm].includes(id));
+          idsWithoutViewPerm.forEach(id =>
+            actions.push({
+              type: "grant",
+              intent: viewPermissionsPerm,
+              identity: id,
+              displayName: resource.displayName,
+              id: resource.id
+            })
+          );
+        }
+      }
+    }
+  });
+  return actions;
+};
+
 const ConfirmationDialog = props => {
   const { classes, open = false, intent, payload, permissions, confirmingUser } = props;
   // If permissions are not fetched yet show Loading indicator
@@ -109,6 +201,31 @@ const ConfirmationDialog = props => {
           );
           content = <Typography>{dialogText}</Typography>;
         }
+      }
+      break;
+    case "project.intent.grant":
+    case "project.intent.revoke":
+      {
+        // TODO: Verify payload
+        // Parse payload variables
+        const project = {
+          id: payload.project.id,
+          displayName: payload.project.displayName
+        };
+        // If view permissions are missing the required actions returned too
+        actions = createActions(permissions.project, payload.newPermissions, project);
+        // The actions require grant permissions
+        permittedToGrant = permissions.project["project.intent.grantPermission"].includes(confirmingUser);
+        title = strings.confirmation.additional_permissions_required;
+        confirmButtonText = strings.confirmation.grant_and_assign;
+        const dialogText =
+          "Note that additionally to Write/Admin Permissions View Permissions are granted. Following actions show all actions that shall be executed";
+        content = (
+          <>
+            <Typography>{dialogText}</Typography>
+            <ActionsTable actions={actions} />
+          </>
+        );
       }
       break;
 
@@ -225,14 +342,8 @@ const ConfirmationDialog = props => {
   }
   onConfirm = () => {
     const subproject = payload.subproject;
-    const workflowitem = payload.workflowitem;
     if (!_isEmpty(actions))
-      props.executeConfirmedActions(
-        actions,
-        payload.project.id,
-        subproject ? subproject.id : undefined,
-        workflowitem ? workflowitem.id : undefined
-      );
+      props.executeConfirmedActions(actions, payload.project.id, subproject ? subproject.id : undefined);
     props.onConfirm();
   };
 

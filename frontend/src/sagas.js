@@ -592,6 +592,7 @@ export function* getEnvironmentSaga() {
 
 export function* executeConfirmedActionsSaga({ showLoading, projectId, subprojectId, actions }) {
   yield execute(function*() {
+    console.log(actions);
     const permissionsChange = {
       projectId: "",
       subprojectId: "",
@@ -603,7 +604,7 @@ export function* executeConfirmedActionsSaga({ showLoading, projectId, subprojec
       try {
         switch (resource) {
           case "project":
-            switch (action.action) {
+            switch (action.type) {
               case "grant":
                 yield callApi(api.grantProjectPermissions, action.id, action.intent, action.identity);
                 permissionsChange.projectId = action.id;
@@ -613,7 +614,7 @@ export function* executeConfirmedActionsSaga({ showLoading, projectId, subprojec
             }
             break;
           case "subproject":
-            switch (action.action) {
+            switch (action.type) {
               case "grant":
                 yield callApi(api.grantSubProjectPermissions, projectId, action.id, action.intent, action.identity);
                 permissionsChange.subprojectId = action.id;
@@ -624,7 +625,7 @@ export function* executeConfirmedActionsSaga({ showLoading, projectId, subprojec
             }
             break;
           case "workflowitem":
-            switch (action.action) {
+            switch (action.type) {
               case "grant":
                 yield callApi(
                   api.grantWorkflowItemPermissions,

@@ -17,6 +17,7 @@ import {
   addTemporaryPermission,
   removeTemporaryPermission
 } from "./actions";
+import { showConfirmationDialog } from "../Confirmation/actions";
 
 class ProjectPermissionsContainer extends Component {
   componentWillMount() {
@@ -53,6 +54,7 @@ class ProjectPermissionsContainer extends Component {
         title={strings.project.project_permissions_title}
         intentOrder={projectIntentOrder}
         disabled={!this.isEnabled(allowedIntents)}
+        showConfirmationDialog={this.props.showConfirmationDialog}
       />
     );
   }
@@ -65,7 +67,8 @@ const mapStateToProps = state => {
     user: state.getIn(["login", "user"]),
     permissionDialogShown: state.getIn(["overview", "permissionDialogShown"]),
     myself: state.getIn(["login", "id"]),
-    id: state.getIn(["overview", "idForPermissions"])
+    id: state.getIn(["overview", "idForPermissions"]),
+    displayName: state.getIn(["overview", "displayNameForPermissions"])
   };
 };
 
@@ -77,7 +80,8 @@ const mapDispatchToProps = dispatch => {
     fetchProjectPermissions: (projectId, showLoading) => dispatch(fetchProjectPermissions(projectId, showLoading)),
     fetchUser: showLoading => dispatch(fetchUser(showLoading)),
     addTemporaryPermission: (permission, userId) => dispatch(addTemporaryPermission(permission, userId)),
-    removeTemporaryPermission: (permission, userId) => dispatch(removeTemporaryPermission(permission, userId))
+    removeTemporaryPermission: (permission, userId) => dispatch(removeTemporaryPermission(permission, userId)),
+    showConfirmationDialog: (intent, payload, project) => dispatch(showConfirmationDialog(intent, payload, project))
   };
 };
 

@@ -78,10 +78,11 @@ export function fetchProjectPermissions(projectId, showLoading = false) {
   };
 }
 
-export function showProjectPermissions(id) {
+export function showProjectPermissions(id, displayName) {
   return {
     type: SHOW_PROJECT_PERMISSIONS,
-    id
+    id,
+    displayName
   };
 }
 
