@@ -92,6 +92,7 @@ const defaultState = fromJS({
   },
   showWorkflowPermissions: false,
   workflowItemReference: "",
+  workflowitemDisplayName: "",
   permissions: { project: {}, subproject: {}, workflowitem: {}, workflowitemId: "" },
   temporaryPermissions: {},
   creationDialogShown: false,
@@ -210,6 +211,7 @@ export default function detailviewReducer(state = defaultState, action) {
     case SHOW_WORKFLOWITEM_PERMISSIONS:
       return state.merge({
         workflowItemReference: action.wId,
+        workflowitemDisplayName: action.wDisplayName,
         permissions: defaultState.get("permissions"),
         temporaryPermissions: defaultState.getIn("temporaryPermissions"),
         showWorkflowPermissions: true
@@ -217,6 +219,7 @@ export default function detailviewReducer(state = defaultState, action) {
     case HIDE_WORKFLOWITEM_PERMISSIONS:
       return state.merge({
         workflowItemReference: defaultState.getIn(["workflowItemReference"]),
+        workflowitemDisplayName: defaultState.getIn(["workflowitemDisplayName"]),
         showWorkflowPermissions: defaultState.getIn(["showWorkflowPermissions"]),
         permissions: defaultState.getIn(["permissions"])
       });

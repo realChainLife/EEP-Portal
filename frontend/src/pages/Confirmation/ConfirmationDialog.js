@@ -8,7 +8,7 @@ import strings from "../../localizeStrings";
 import DialogButtons from "./DialogButtons";
 import ActionsTable from "./ActionsTable";
 import _isEmpty from "lodash/isEmpty";
-import { getMissingViewPermissions } from "./SideEffectActions";
+import { getMissingViewPermissions, createActions } from "./SideEffectActions";
 import WarningTypography from "./WarningTypography";
 import { Typography, CircularProgress } from "@material-ui/core";
 import { formatString } from "../../helper";
@@ -33,100 +33,11 @@ const styles = {
   }
 };
 
-const createActions = (oldPermissions, newPermissions, project, subproject = {}, workflowitem = {}) => {
-  const actions = [];
-  Object.keys(oldPermissions).forEach(key => {
-    let resource;
-    const resourceString = key.split(".")[0];
-    switch (resourceString) {
-      case "project":
-        resource = project;
-        break;
-      case "subproject":
-        resource = subproject;
-        break;
-      case "workflowitem":
-        resource = workflowitem;
-        break;
-      default:
-        resource = project;
-        break;
-    }
-    const permissionIds = oldPermissions[key];
-    const temporaryPermissionIds = newPermissions[key];
-
-    const revokeIds = permissionIds.filter(id => !temporaryPermissionIds.includes(id));
-    if (revokeIds.length > 0)
-      revokeIds.forEach(id =>
-        actions.push({
-          type: "revoke",
-          intent: key,
-          identity: id,
-          displayName: resource.displayName,
-          id: resource.id
-        })
-      );
-    const grantIds = temporaryPermissionIds.filter(id => !permissionIds.includes(id));
-    if (grantIds.length > 0) {
-      grantIds.forEach(id =>
-        actions.push({
-          type: "grant",
-          intent: key,
-          identity: id,
-          displayName: resource.displayName,
-          id: resource.id
-        })
-      );
-
-      // If it's a write/admin permission, check the view permissions and create actions if necessary
-      const intent = key.split(".")[1];
-      if (intent !== "viewSummary" && intent !== "viewDetails") {
-        let idsWithoutViewPerm;
-        const viewSummaryPerm = `${resourceString}.viewSummary`;
-        const viewDetailsPerm = `${resourceString}.viewDetails`;
-        const viewPermissionsPerm = `${resourceString}.intent.listPermissions`;
-
-        idsWithoutViewPerm = grantIds.filter(id => !oldPermissions[viewSummaryPerm].includes(id));
-        idsWithoutViewPerm.forEach(id =>
-          actions.push({
-            type: "grant",
-            intent: viewSummaryPerm,
-            identity: id,
-            displayName: resource.displayName,
-            id: resource.id
-          })
-        );
-        idsWithoutViewPerm = grantIds.filter(id => !oldPermissions[viewDetailsPerm].includes(id));
-        idsWithoutViewPerm.forEach(id =>
-          actions.push({
-            type: "grant",
-            intent: viewDetailsPerm,
-            identity: id,
-            displayName: resource.displayName,
-            id: resource.id
-          })
-        );
-        // If true additionally grant "viewPermission" permission
-        if (key.split(".")[2] === "grantPermission" || key.split(".")[2] === "revokePermission") {
-          idsWithoutViewPerm = grantIds.filter(id => !oldPermissions[viewPermissionsPerm].includes(id));
-          idsWithoutViewPerm.forEach(id =>
-            actions.push({
-              type: "grant",
-              intent: viewPermissionsPerm,
-              identity: id,
-              displayName: resource.displayName,
-              id: resource.id
-            })
-          );
-        }
-      }
-    }
-  });
-  return actions;
-};
-
+// Implement a new confirmation dialog by setting title, content and confirmButtonText
+// Sideeffect actions must be handled here
 const ConfirmationDialog = props => {
   const { classes, open = false, intent, payload, permissions, confirmingUser } = props;
+
   // If permissions are not fetched yet show Loading indicator
   if (
     props.isFetchingProjectPermissions ||
@@ -156,11 +67,8 @@ const ConfirmationDialog = props => {
     onConfirm = props.onConfirm,
     permittedToGrant = false;
 
-  // Implement a new confirmation dialog by setting title, content and confirmButtonText
-  // The intent onConfirm is handled by the saga which has triggered the confirmation
-  // Sideeffect actions must be handled here
-  // The payload is defined by the saga which triggers the CONFIRM_INTENT-action
   switch (intent) {
+    // The payload is defined by the saga which triggers the CONFIRM_INTENT-action
     case "project.assign":
       {
         // TODO: Verify payload
@@ -203,8 +111,66 @@ const ConfirmationDialog = props => {
         }
       }
       break;
+    // The payload is defined by an action which is triggered by the PermissionDialog
     case "project.intent.grant":
     case "project.intent.revoke":
+      {
+        // TODO: Verify payload
+        // Parse payload variables
+        const projectPermissions = { project: permissions.project };
+        const project = {
+          id: payload.project.id,
+          displayName: payload.project.displayName
+        };
+        // If view permissions are missing the required actions returned too
+        actions = createActions(projectPermissions, payload.newPermissions, project);
+        // The actions require grant permissions
+        permittedToGrant = permissions.project["project.intent.grantPermission"].includes(confirmingUser);
+        title = strings.confirmation.additional_permissions_required;
+        confirmButtonText = strings.confirmation.grant_and_assign;
+        const dialogText =
+          "Note that additionally to Write/Admin Permissions View Permissions are granted. Following actions show all actions that shall be executed";
+        content = (
+          <>
+            <Typography>{dialogText}</Typography>
+            <ActionsTable actions={actions} />
+          </>
+        );
+      }
+      break;
+
+    case "subproject.intent.grant":
+    case "subproject.intent.revoke":
+      {
+        // TODO: Verify payload
+        // Parse payload variables
+        const subprojectPermissions = { project: permissions.project, subproject: permissions.subproject };
+        const project = {
+          id: payload.project.id,
+          displayName: payload.project.displayName
+        };
+        const subproject = {
+          id: payload.subproject.id,
+          displayName: payload.subproject.displayName
+        };
+        // If view permissions are missing the required actions returned too
+        actions = createActions(subprojectPermissions, payload.newPermissions, project, subproject);
+        // The actions require grant permissions
+        permittedToGrant = permissions.subproject["subproject.intent.grantPermission"].includes(confirmingUser);
+        title = strings.confirmation.additional_permissions_required;
+        confirmButtonText = strings.confirmation.grant_and_assign;
+        const dialogText =
+          "Note that additionally to Write/Admin Permissions View Permissions are granted. Following actions show all actions that shall be executed";
+        content = (
+          <>
+            <Typography>{dialogText}</Typography>
+            <ActionsTable actions={actions} />
+          </>
+        );
+      }
+      break;
+    case "workflowitem.intent.grant":
+    case "workflowitem.intent.revoke":
       {
         // TODO: Verify payload
         // Parse payload variables
@@ -212,10 +178,18 @@ const ConfirmationDialog = props => {
           id: payload.project.id,
           displayName: payload.project.displayName
         };
+        const subproject = {
+          id: payload.subproject.id,
+          displayName: payload.subproject.displayName
+        };
+        const workflowitem = {
+          id: payload.workflowitem.id,
+          displayName: payload.workflowitem.displayName
+        };
         // If view permissions are missing the required actions returned too
-        actions = createActions(permissions.project, payload.newPermissions, project);
+        actions = createActions(permissions, payload.newPermissions, project, subproject, workflowitem);
         // The actions require grant permissions
-        permittedToGrant = permissions.project["project.intent.grantPermission"].includes(confirmingUser);
+        permittedToGrant = permissions.subproject["subproject.intent.grantPermission"].includes(confirmingUser);
         title = strings.confirmation.additional_permissions_required;
         confirmButtonText = strings.confirmation.grant_and_assign;
         const dialogText =

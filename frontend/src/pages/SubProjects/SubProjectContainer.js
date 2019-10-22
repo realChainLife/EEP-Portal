@@ -104,7 +104,7 @@ const mapDispatchToProps = (dispatch, ownProps) => {
       dispatch(showEditDialog(id, displayName, description, currency, projectedBudgets)),
     fetchUser: () => dispatch(fetchUser(true)),
     closeProject: pId => dispatch(closeProject(pId, true)),
-    showSubProjectPermissions: id => dispatch(showSubProjectPermissions(id)),
+    showSubProjectPermissions: (id, displayName) => dispatch(showSubProjectPermissions(id, displayName)),
     showSubProjectAdditionalData: id => dispatch(showSubProjectAdditionalData(id)),
     hideSubProjectAdditionalData: () => dispatch(hideSubProjectAdditionalData()),
     openAnalyticsDialog: () => dispatch(openAnalyticsDialog())

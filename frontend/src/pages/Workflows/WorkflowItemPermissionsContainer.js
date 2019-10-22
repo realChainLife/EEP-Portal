@@ -14,6 +14,7 @@ import withInitialLoading from "../Loading/withInitialLoading";
 import { toJS } from "../../helper";
 import { fetchUser } from "../Login/actions";
 import { workflowItemIntentOrder } from "../../permissions";
+import { showConfirmationDialog } from "../Confirmation/actions";
 
 class WorkflowItemPermissionsContainer extends Component {
   componentWillReceiveProps(nextProps) {
@@ -45,6 +46,7 @@ class WorkflowItemPermissionsContainer extends Component {
         revoke={this.revoke}
         intentOrder={workflowItemIntentOrder}
         disabled={!this.isEnabled(this.props.workflowItems, this.props.wId)}
+        showConfirmationDialog={payload => this.props.showConfirmationDialog("workflowitem.intent.grant", payload)}
       />
     );
   }
@@ -54,10 +56,15 @@ const mapStateToProps = state => {
   return {
     permissions: state.getIn(["workflow", "permissions", "workflowitem"]),
     temporaryPermissions: state.getIn(["workflow", "temporaryPermissions"]),
+    projectId: state.getIn(["workflow", "parentProject", "id"]),
+    projectDisplayName: state.getIn(["workflow", "parentProject", "displayName"]),
+    subprojectId: state.getIn(["workflow", "id"]),
+    subprojectDisplayName: state.getIn(["workflow", "displayName"]),
+    wId: state.getIn(["workflow", "workflowItemReference"]),
+    workflowitemDisplayName: state.getIn(["workflow", "workflowitemDisplayName"]),
     workflowItems: state.getIn(["workflow", "workflowItems"]),
     user: state.getIn(["login", "user"]),
     permissionDialogShown: state.getIn(["workflow", "showWorkflowPermissions"]),
-    wId: state.getIn(["workflow", "workflowItemReference"]),
     myself: state.getIn(["login", "id"])
   };
 };
@@ -73,7 +80,8 @@ const mapDispatchToProps = dispatch => {
       dispatch(fetchWorkflowItemPermissions(pId, spId, wId, showLoading)),
     fetchUser: () => dispatch(fetchUser(true)),
     addTemporaryPermission: (permission, userId) => dispatch(addTemporaryPermission(permission, userId)),
-    removeTemporaryPermission: (permission, userId) => dispatch(removeTemporaryPermission(permission, userId))
+    removeTemporaryPermission: (permission, userId) => dispatch(removeTemporaryPermission(permission, userId)),
+    showConfirmationDialog: (intent, payload) => dispatch(showConfirmationDialog(intent, payload))
   };
 };
 

@@ -224,10 +224,11 @@ export function showEditDialog(id, name, description, currency, projectedBudgets
     projectedBudgets
   };
 }
-export function showSubProjectPermissions(id) {
+export function showSubProjectPermissions(id, displayName) {
   return {
     type: SHOW_SUBPROJECT_PERMISSIONS,
-    id
+    id,
+    displayName
   };
 }
 

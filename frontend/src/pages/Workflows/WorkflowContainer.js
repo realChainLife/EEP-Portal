@@ -143,7 +143,7 @@ const mapDispatchToProps = (dispatch, ownProps) => {
 
     setSelectedView: (id, section) => dispatch(setSelectedView(id, section)),
 
-    showWorkflowItemPermissions: wId => dispatch(showWorkflowItemPermissions(wId)),
+    showWorkflowItemPermissions: (wId, wDisplayName) => dispatch(showWorkflowItemPermissions(wId, wDisplayName)),
     updateWorkflowOrderOnState: items => dispatch(updateWorkflowOrderOnState(items)),
     enableWorkflowEdit: () => dispatch(enableWorkflowEdit()),
     disableWorkflowEdit: () => dispatch(disableWorkflowEdit()),

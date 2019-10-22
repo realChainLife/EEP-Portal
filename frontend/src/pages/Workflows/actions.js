@@ -215,10 +215,11 @@ export function hideSubProjectAssignee() {
   };
 }
 
-export function showWorkflowItemPermissions(wId) {
+export function showWorkflowItemPermissions(wId, wDisplayName) {
   return {
     type: SHOW_WORKFLOWITEM_PERMISSIONS,
-    wId
+    wId,
+    wDisplayName
   };
 }
 

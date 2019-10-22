@@ -15,6 +15,7 @@ import {
   addTemporaryPermission,
   removeTemporaryPermission
 } from "./actions";
+import { showConfirmationDialog } from "../Confirmation/actions";
 
 class SubProjectPermissionsContainer extends Component {
   componentWillReceiveProps(nextProps) {
@@ -57,6 +58,7 @@ class SubProjectPermissionsContainer extends Component {
         revoke={this.revoke}
         intentOrder={subProjectIntentOrder}
         disabled={!this.isEnabled(allowedIntents)}
+        showConfirmationDialog={payload => this.props.showConfirmationDialog("subproject.intent.grant", payload)}
       />
     );
   }
@@ -66,7 +68,10 @@ const mapStateToProps = state => {
   return {
     permissions: state.getIn(["detailview", "permissions", "subproject"]),
     temporaryPermissions: state.getIn(["detailview", "temporaryPermissions"]),
+    projectId: state.getIn(["detailview", "id"]),
+    projectDisplayName: state.getIn(["detailview", "projectName"]),
     subprojectId: state.getIn(["detailview", "idForPermissions"]),
+    subprojectDisplayName: state.getIn(["detailview", "displayNameForPermissions"]),
     allowedIntents: state.getIn(["detailview", "allowedIntents"]),
     user: state.getIn(["login", "user"]),
     permissionDialogShown: state.getIn(["detailview", "showSubProjectPermissions"]),
@@ -84,7 +89,8 @@ const mapDispatchToProps = dispatch => {
     addTemporaryPermission: (subprojectId, permission, userId) =>
       dispatch(addTemporaryPermission(subprojectId, permission, userId)),
     removeTemporaryPermission: (subprojectId, permission, userId) =>
-      dispatch(removeTemporaryPermission(subprojectId, permission, userId))
+      dispatch(removeTemporaryPermission(subprojectId, permission, userId)),
+    showConfirmationDialog: (intent, payload) => dispatch(showConfirmationDialog(intent, payload))
   };
 };
 

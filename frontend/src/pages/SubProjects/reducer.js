@@ -67,6 +67,7 @@ const defaultState = fromJS({
   permissions: { project: {}, subproject: {} },
   temporaryPermissions: {},
   idForPermissions: "",
+  displayNameForPermissions: "",
   showProjectAssignees: false,
   projectAssignee: "",
   dialogTitle: strings.subproject.subproject_add_title
@@ -95,6 +96,7 @@ export default function detailviewReducer(state = defaultState, action) {
         permissions: defaultState.get("permissions"),
         temporaryPermissions: defaultState.get("temporaryPermissions"),
         idForPermissions: action.id,
+        displayNameForPermissions: action.displayName,
         showSubProjectPermissions: true
       });
     case SHOW_SUBPROJECT_ADDITIONAL_DATA:
@@ -111,6 +113,7 @@ export default function detailviewReducer(state = defaultState, action) {
     case HIDE_SUBPROJECT_PERMISSIONS:
       return state.merge({
         idForPermissions: defaultState.get("idForPermissions"),
+        displayNameForPermissions: defaultState.get("displayNameForPermissions"),
         showSubProjectPermissions: defaultState.get("showSubProjectPermissions"),
         permissions: defaultState.getIn(["permissions"])
       });

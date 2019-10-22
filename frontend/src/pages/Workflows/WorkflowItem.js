@@ -446,7 +446,7 @@ export const WorkflowItem = SortableElement(
               showEdit,
               editWorkflow.bind(this, workflow.data, props),
               canViewWorkflowItemPermissions(allowedIntents),
-              () => props.showWorkflowItemPermissions(id),
+              () => props.showWorkflowItemPermissions(id, displayName),
               showClose,
               () => props.closeWorkflowItem(id),
               currentWorkflowSelectable,

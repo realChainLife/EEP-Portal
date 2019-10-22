@@ -27,12 +27,18 @@ const PermissionDialog = props => {
         <Button
           data-test="permission-submit"
           color="primary"
-          onClick={() => {
-            props.showConfirmationDialog("project.intent.grant", {
-              project: { id: props.id, displayName: props.displayName },
-              newPermissions: props.temporaryPermissions
-            });
-          }}
+          onClick={
+            JSON.stringify(props.temporaryPermissions) !== JSON.stringify(props.permissions)
+              ? () => {
+                  props.showConfirmationDialog({
+                    project: { id: props.projectId, displayName: props.projectDisplayName },
+                    subproject: { id: props.subprojectId, displayName: props.subprojectDisplayName },
+                    workflowitem: { id: props.wId, displayName: props.workfowitemDisplayName },
+                    newPermissions: props.temporaryPermissions
+                  });
+                }
+              : props.hidePermissionDialog
+          }
         >
           {strings.common.submit}
         </Button>

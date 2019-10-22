@@ -592,7 +592,6 @@ export function* getEnvironmentSaga() {
 
 export function* executeConfirmedActionsSaga({ showLoading, projectId, subprojectId, actions }) {
   yield execute(function*() {
-    console.log(actions);
     const permissionsChange = {
       projectId: "",
       subprojectId: "",
