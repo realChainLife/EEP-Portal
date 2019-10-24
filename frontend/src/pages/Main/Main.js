@@ -49,7 +49,7 @@ const Main = props => {
         <Route component={NavbarContainer} />
       </div>
       <div className="container" style={{ marginTop: "48px" }}>
-        <Route component={LiveNotificationContainer} />
+        {/* <Route component={LiveNotificationContainer} /> */}
         <Route component={ConfirmationContainer} />
         <Switch>
           <Route exact path="/" component={Placeholder} />

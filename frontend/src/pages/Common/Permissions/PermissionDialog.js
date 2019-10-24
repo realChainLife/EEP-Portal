@@ -33,7 +33,7 @@ const PermissionDialog = props => {
                   props.showConfirmationDialog({
                     project: { id: props.projectId, displayName: props.projectDisplayName },
                     subproject: { id: props.subprojectId, displayName: props.subprojectDisplayName },
-                    workflowitem: { id: props.wId, displayName: props.workfowitemDisplayName },
+                    workflowitem: { id: props.wId, displayName: props.workflowitemDisplayName },
                     newPermissions: props.temporaryPermissions
                   });
                 }

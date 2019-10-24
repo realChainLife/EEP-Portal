@@ -1,6 +1,8 @@
 import _isEmpty from "lodash/isEmpty";
 
-export const getMissingViewPermissions = (
+// Side effect describes an action which triggers indirectly according to the main intent.
+// (e.g. main-intent:assign, side-effect: grant view permission)
+export const createAllSideEffectActions = (
   permissions,
   identity,
   project,
@@ -8,68 +10,82 @@ export const getMissingViewPermissions = (
   workflowitem = undefined
 ) => {
   const resources = ["project", "subproject", "workflowitem"];
-  const action = "grant";
-  const missingPermissions = [];
+  const actionType = "grant";
+  const allSideEffectActions = [];
   resources.forEach(res => {
     const resPermissions = permissions[res];
     if (!_isEmpty(resPermissions)) {
+      let id, displayName;
       switch (res) {
         case "project":
-          const pMissPerm = parseAction(resPermissions, res, action, project.id, project.displayName, identity);
-          if (pMissPerm.length !== 0) missingPermissions.push(...pMissPerm);
+          id = project.id;
+          displayName = project.displayName;
           break;
 
         case "subproject":
-          const sMissPerm = parseAction(resPermissions, res, action, subproject.id, subproject.displayName, identity);
-          if (sMissPerm.length !== 0) missingPermissions.push(...sMissPerm);
+          id = subproject.id;
+          displayName = subproject.displayName;
           break;
 
         case "workflowitem":
-          if (resPermissions[`${res}.view`] === undefined || !resPermissions[`${res}.view`].includes(identity)) {
-            missingPermissions.push({
-              action,
-              id: workflowitem.id,
-              displayName: workflowitem.displayName,
-              intent: `${res}.view`,
-              identity
-            });
-            return;
-          }
+          id = workflowitem.id;
+          displayName = workflowitem.displayName;
           break;
 
         default:
+          id = project.id;
+          displayName = project.displayName;
           break;
       }
+      const actions = createSideEffectActions(resPermissions, res, actionType, id, displayName, identity);
+      if (actions.length !== 0) allSideEffectActions.push(...actions);
     }
   });
-  return missingPermissions;
+  return allSideEffectActions;
 };
-
-function parseAction(permissions, resource, action, id, displayName, identity) {
+// Find out which view permissions are missing and create side effect actions
+function createSideEffectActions(permissions, resource, type, id, displayName, identity) {
   const viewSummary = `${resource}.viewSummary`;
   const viewDetails = `${resource}.viewDetails`;
+  const viewWorkflowitem = `${resource}.view`;
   const listPermissions = `${resource}.intent.listPermissions`;
   const grantPermission = `${resource}.intent.grantPermission`;
   const revokePermission = `${resource}.intent.revokePermission`;
-  let missingPermissions = [];
-
-  if (permissions[viewSummary] === undefined || !permissions[viewSummary].includes(identity)) {
-    missingPermissions.push({ type: action, id, displayName, intent: viewSummary, identity });
-  }
-  if (permissions[viewDetails] === undefined || !permissions[viewDetails].includes(identity)) {
-    missingPermissions.push({ type: action, id, displayName, intent: viewDetails, identity });
+  let sideEffectActions = [];
+  if (resource !== "workflowitem") {
+    if (permissions[viewSummary] === undefined || !permissions[viewSummary].includes(identity)) {
+      const action = { type, id, displayName, intent: viewSummary, identity };
+      sideEffectActions.push(action);
+    }
+    if (permissions[viewDetails] === undefined || !permissions[viewDetails].includes(identity)) {
+      const action = { type, id, displayName, intent: viewDetails, identity };
+      sideEffectActions.push(action);
+    }
+  } else {
+    if (permissions[viewWorkflowitem] === undefined || !permissions[viewWorkflowitem].includes(identity)) {
+      const action = { type, id, displayName, intent: viewWorkflowitem, identity };
+      sideEffectActions.push(action);
+    }
   }
   // Only check for listPermissions if identity has grant/revoke permissions
   if (
     (permissions[grantPermission].includes(identity) || permissions[revokePermission].includes(identity)) &&
     (permissions[listPermissions] === undefined || !permissions[listPermissions].includes(identity))
   ) {
-    missingPermissions.push({ type: action, id, displayName, intent: listPermissions, identity });
+    const action = { type, id, displayName, intent: listPermissions, identity };
+    sideEffectActions.push(action);
   }
-  return missingPermissions;
+  return sideEffectActions;
 }
 
-export function createActions(oldPermissions, newPermissions, project, subproject = {}, workflowitem = {}) {
+// Create grant/revoke actions including side effect actions
+export function createAllPermissionActions(
+  oldPermissions,
+  newPermissions,
+  project,
+  subproject = {},
+  workflowitem = {}
+) {
   let actions = [];
   let resourceString;
   if (_isEmpty(subproject)) {
@@ -133,7 +149,7 @@ export function createActions(oldPermissions, newPermissions, project, subprojec
   let updatedPermissions = oldPermissions;
   updatedPermissions[resourceString] = newPermissions;
   ids.forEach(id => {
-    const sideEffectActions = getMissingViewPermissions(updatedPermissions, id, project, subproject, workflowitem);
+    const sideEffectActions = createAllSideEffectActions(updatedPermissions, id, project, subproject, workflowitem);
     actions = actions.concat(sideEffectActions);
   });
 

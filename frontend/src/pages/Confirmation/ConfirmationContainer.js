@@ -5,7 +5,7 @@ import { toJS } from "../../helper";
 import { fetchProjectPermissions } from "../Overview/actions";
 import { fetchSubProjectPermissions } from "../SubProjects/actions";
 import { fetchWorkflowItemPermissions } from "../Workflows/actions";
-import { cancelConfirmation, confirmConfirmation, executeConfirmedActions } from "./actions";
+import { cancelConfirmation, confirmConfirmation, executeConfirmedActions, storeActions } from "./actions";
 import ConfirmationDialog from "./ConfirmationDialog";
 
 class ConfirmationContainer extends Component {
@@ -53,6 +53,11 @@ class ConfirmationContainer extends Component {
           isFetchingProjectPermissions={this.props.isFetchingProjectPermissions}
           isFetchingSubprojectPermissions={this.props.isFetchingSubprojectPermissions}
           isFetchingWorkflowitemPermissions={this.props.isFetchingWorkflowitemPermissions}
+          executedActions={this.props.executedActions}
+          actions={this.props.actions}
+          storeActions={this.props.storeActions}
+          actionsAreExecuted={this.props.actionsAreExecuted}
+          executingActions={this.props.executingActions}
         />
       );
     }
@@ -67,7 +72,8 @@ const mapDispatchToProps = dispatch => {
     fetchWorkflowitemPermissions: (pId, spId, wId) => dispatch(fetchWorkflowItemPermissions(pId, spId, wId, false)),
     confirmConfirmation: () => dispatch(confirmConfirmation(true)),
     cancelConfirmation: () => dispatch(cancelConfirmation(false)),
-    executeConfirmedActions: (actions, pId, subId) => dispatch(executeConfirmedActions(actions, pId, subId, true))
+    executeConfirmedActions: (actions, pId, subId) => dispatch(executeConfirmedActions(actions, pId, subId, false)),
+    storeActions: actions => dispatch(storeActions(actions))
   };
 };
 
@@ -81,7 +87,11 @@ const mapStateToProps = state => {
     confirmingUser: state.getIn(["login", "id"]),
     isFetchingProjectPermissions: state.getIn(["confirmation", "isFetchingProjectPermissions"]),
     isFetchingSubprojectPermissions: state.getIn(["confirmation", "isFetchingSubprojectPermissions"]),
-    isFetchingWorkflowitemPermissions: state.getIn(["confirmation", "isFetchingWorkflowitemPermissions"])
+    isFetchingWorkflowitemPermissions: state.getIn(["confirmation", "isFetchingWorkflowitemPermissions"]),
+    executedActions: state.getIn(["confirmation", "executedActions"]),
+    actions: state.getIn(["confirmation", "actions"]),
+    actionsAreExecuted: state.getIn(["confirmation", "actionsAreExecuted"]),
+    executingActions: state.getIn(["confirmation", "executingActions"])
   };
 };
 

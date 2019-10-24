@@ -27,7 +27,14 @@ import {
   GET_SUBPROJECT_KPIS_FAIL,
   GET_SUBPROJECT_KPIS_SUCCESS
 } from "./pages/Analytics/actions.js";
-import { CONFIRM_INTENT, INTENT_CANCELED, INTENT_CONFIRMED } from "./pages/Confirmation/actions.js";
+import {
+  CONFIRM_INTENT,
+  INTENT_CANCELED,
+  INTENT_CONFIRMED,
+  EXECUTE_CONFIRMED_ACTIONS_FAILURE,
+  EXECUTE_CONFIRMED_ACTIONS_SUCCESS,
+  EXECUTE_CONFIRMED_ACTIONS
+} from "./pages/Confirmation/actions.js";
 import { CLEAR_DOCUMENTS, VALIDATE_DOCUMENT, VALIDATE_DOCUMENT_SUCCESS } from "./pages/Documents/actions";
 import { cancelDebounce, hideLoadingIndicator, showLoadingIndicator } from "./pages/Loading/actions.js";
 import {
@@ -102,9 +109,6 @@ import {
   CREATE_SUBPROJECT_SUCCESS,
   EDIT_SUBPROJECT,
   EDIT_SUBPROJECT_SUCCESS,
-  EXECUTE_CONFIRMED_ACTIONS,
-  EXECUTE_CONFIRMED_ACTIONS_FAILURE,
-  EXECUTE_CONFIRMED_ACTIONS_SUCCESS,
   FETCH_ALL_PROJECT_DETAILS,
   FETCH_ALL_PROJECT_DETAILS_SUCCESS,
   FETCH_NEXT_PROJECT_HISTORY_PAGE,
@@ -606,6 +610,12 @@ export function* executeConfirmedActionsSaga({ showLoading, projectId, subprojec
             switch (action.type) {
               case "grant":
                 yield callApi(api.grantProjectPermissions, action.id, action.intent, action.identity);
+                yield put({
+                  type: GRANT_PERMISSION_SUCCESS,
+                  id: action.id,
+                  intent: action.intent,
+                  identity: action.identity
+                });
                 permissionsChange.projectId = action.id;
                 break;
               default:
@@ -616,6 +626,12 @@ export function* executeConfirmedActionsSaga({ showLoading, projectId, subprojec
             switch (action.type) {
               case "grant":
                 yield callApi(api.grantSubProjectPermissions, projectId, action.id, action.intent, action.identity);
+                yield put({
+                  type: GRANT_SUBPROJECT_PERMISSION_SUCCESS,
+                  id: action.id,
+                  intent: action.intent,
+                  identity: action.identity
+                });
                 permissionsChange.subprojectId = action.id;
                 break;
 
@@ -634,6 +650,12 @@ export function* executeConfirmedActionsSaga({ showLoading, projectId, subprojec
                   action.intent,
                   action.identity
                 );
+                yield put({
+                  type: GRANT_WORKFLOWITEM_PERMISSION_SUCCESS,
+                  id: action.id,
+                  intent: action.intent,
+                  identity: action.identity
+                });
                 permissionsChange.workflowitemId = action.id;
                 break;
 
@@ -1386,7 +1408,7 @@ export function* submitBatchForWorkflowSaga({ projectId, subprojectId, actions, 
             );
             yield put({
               type: GRANT_WORKFLOWITEM_PERMISSION_SUCCESS,
-              workflowitemId: action.id,
+              workflowitemId: action.id, // TODO change to id
               intent: action.intent,
               identity: action.identity
             });

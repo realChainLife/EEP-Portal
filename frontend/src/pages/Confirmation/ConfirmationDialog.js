@@ -8,7 +8,7 @@ import strings from "../../localizeStrings";
 import DialogButtons from "./DialogButtons";
 import ActionsTable from "./ActionsTable";
 import _isEmpty from "lodash/isEmpty";
-import { getMissingViewPermissions, createActions } from "./SideEffectActions";
+import { createAllSideEffectActions, createAllPermissionActions } from "./SideEffectActions";
 import WarningTypography from "./WarningTypography";
 import { Typography, CircularProgress } from "@material-ui/core";
 import { formatString } from "../../helper";
@@ -16,7 +16,8 @@ import { formatString } from "../../helper";
 const styles = {
   paperRoot: {
     width: "100%",
-    overflow: "visible"
+    overflow: "visible",
+    maxWidth: "800px"
   },
   loadingContainer: {
     display: "flex",
@@ -36,7 +37,19 @@ const styles = {
 // Implement a new confirmation dialog by setting title, content and confirmButtonText
 // Sideeffect actions must be handled here
 const ConfirmationDialog = props => {
-  const { classes, open = false, intent, payload, permissions, confirmingUser } = props;
+  const {
+    classes,
+    open = false,
+    intent,
+    payload,
+    permissions,
+    confirmingUser,
+    executedActions,
+    actions,
+    storeActions,
+    actionsAreExecuted,
+    executingActions
+  } = props;
 
   // If permissions are not fetched yet show Loading indicator
   if (
@@ -60,11 +73,10 @@ const ConfirmationDialog = props => {
       </Dialog>
     );
   }
-  let actions,
-    title,
+  let title,
     content,
     confirmButtonText = strings.common.confirm,
-    onConfirm = props.onConfirm,
+    executeActions = props.onConfirm,
     permittedToGrant = false;
 
   switch (intent) {
@@ -78,9 +90,9 @@ const ConfirmationDialog = props => {
           id: payload.project.id,
           displayName: payload.project.displayName
         };
-        // If view permissions are missing the required actions return
-        actions = getMissingViewPermissions(projectPermissions, payload.assignee.id, project);
-        // The actions require grant permissions
+        // If view permissions are missing the required actions will be generated
+        if (_isEmpty(actions))
+          storeActions(createAllSideEffectActions(projectPermissions, payload.assignee.id, project));
         permittedToGrant = permissions.project["project.intent.grantPermission"].includes(confirmingUser);
 
         if (!_isEmpty(actions)) {
@@ -95,7 +107,7 @@ const ConfirmationDialog = props => {
           content = (
             <>
               <Typography>{dialogText}</Typography>
-              <ActionsTable actions={actions} />
+              <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
             </>
           );
         } else {
@@ -122,18 +134,18 @@ const ConfirmationDialog = props => {
           id: payload.project.id,
           displayName: payload.project.displayName
         };
-        // If view permissions are missing the required actions returned too
-        actions = createActions(projectPermissions, payload.newPermissions, project);
-        // The actions require grant permissions
+        // Create grant/revoke actions including side effect actions
+        if (_isEmpty(actions))
+          storeActions(createAllPermissionActions(projectPermissions, payload.newPermissions, project));
         permittedToGrant = permissions.project["project.intent.grantPermission"].includes(confirmingUser);
         title = strings.confirmation.additional_permissions_required;
-        confirmButtonText = strings.confirmation.grant_and_assign;
+        confirmButtonText = strings.common.grant;
         const dialogText =
           "Note that additionally to Write/Admin Permissions View Permissions are granted. Following actions show all actions that shall be executed";
         content = (
           <>
             <Typography>{dialogText}</Typography>
-            <ActionsTable actions={actions} />
+            <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
           </>
         );
       }
@@ -153,18 +165,18 @@ const ConfirmationDialog = props => {
           id: payload.subproject.id,
           displayName: payload.subproject.displayName
         };
-        // If view permissions are missing the required actions returned too
-        actions = createActions(subprojectPermissions, payload.newPermissions, project, subproject);
-        // The actions require grant permissions
+        // Create grant/revoke actions including side effect actions
+        if (_isEmpty(actions))
+          storeActions(createAllPermissionActions(subprojectPermissions, payload.newPermissions, project, subproject));
         permittedToGrant = permissions.subproject["subproject.intent.grantPermission"].includes(confirmingUser);
         title = strings.confirmation.additional_permissions_required;
-        confirmButtonText = strings.confirmation.grant_and_assign;
+        confirmButtonText = strings.common.grant;
         const dialogText =
           "Note that additionally to Write/Admin Permissions View Permissions are granted. Following actions show all actions that shall be executed";
         content = (
           <>
             <Typography>{dialogText}</Typography>
-            <ActionsTable actions={actions} />
+            <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
           </>
         );
       }
@@ -186,18 +198,22 @@ const ConfirmationDialog = props => {
           id: payload.workflowitem.id,
           displayName: payload.workflowitem.displayName
         };
-        // If view permissions are missing the required actions returned too
-        actions = createActions(permissions, payload.newPermissions, project, subproject, workflowitem);
-        // The actions require grant permissions
+
+        // Create grant/revoke actions including side effect actions
+        if (_isEmpty(actions)) {
+          storeActions(
+            createAllPermissionActions(permissions, payload.newPermissions, project, subproject, workflowitem)
+          );
+        }
         permittedToGrant = permissions.subproject["subproject.intent.grantPermission"].includes(confirmingUser);
         title = strings.confirmation.additional_permissions_required;
-        confirmButtonText = strings.confirmation.grant_and_assign;
+        confirmButtonText = strings.common.grant;
         const dialogText =
           "Note that additionally to Write/Admin Permissions View Permissions are granted. Following actions show all actions that shall be executed";
         content = (
           <>
             <Typography>{dialogText}</Typography>
-            <ActionsTable actions={actions} />
+            {!_isEmpty(actions) ? <ActionsTable actions={actions} executedActions={executedActions} /> : null}
           </>
         );
       }
@@ -215,10 +231,9 @@ const ConfirmationDialog = props => {
         id: payload.subproject.id,
         displayName: payload.subproject.displayName
       };
-      // If view permissions are missing the required actions return
-      actions = getMissingViewPermissions(subprojectPermissions, payload.assignee.id, project, subproject);
-      // The actions require grant permissions
-      // TODO: if only subproject actions shall be executed only subproject permissions shall be checked
+      // If view permissions are missing the required actions will be generated
+      if (_isEmpty(actions))
+        storeActions(createAllSideEffectActions(subprojectPermissions, payload.assignee.id, project, subproject));
       permittedToGrant = isPermittedToGrant(confirmingUser, subprojectPermissions, actions);
 
       if (!_isEmpty(actions)) {
@@ -233,7 +248,7 @@ const ConfirmationDialog = props => {
         content = (
           <>
             <Typography>{dialogText}</Typography>
-            <ActionsTable actions={actions} />
+            <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
           </>
         );
       } else {
@@ -269,16 +284,12 @@ const ConfirmationDialog = props => {
         id: payload.workflowitem.id,
         displayName: payload.workflowitem.displayName
       };
-      // If view permissions are missing the required actions return
-      actions = getMissingViewPermissions(
-        workflowitemPermissions,
-        payload.assignee.id,
-        project,
-        subproject,
-        workflowitem
-      );
-      // The actions require grant permissions
-      // TODO: if only subproject actions shall be executed only subproject permissions shall be checked
+      // If view permissions are missing the required actions will be generated
+      if (_isEmpty(actions)) {
+        storeActions(
+          createAllSideEffectActions(workflowitemPermissions, payload.assignee.id, project, subproject, workflowitem)
+        );
+      }
       permittedToGrant = isPermittedToGrant(confirmingUser, workflowitemPermissions, actions);
 
       if (!_isEmpty(actions)) {
@@ -293,7 +304,7 @@ const ConfirmationDialog = props => {
         content = (
           <>
             <Typography>{dialogText}</Typography>
-            <ActionsTable actions={actions} />
+            <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
           </>
         );
       } else {
@@ -314,11 +325,10 @@ const ConfirmationDialog = props => {
       content = "Confirmation Dialog for " + intent + " is not implemented yet";
       break;
   }
-  onConfirm = () => {
+  executeActions = () => {
     const subproject = payload.subproject;
     if (!_isEmpty(actions))
       props.executeConfirmedActions(actions, payload.project.id, subproject ? subproject.id : undefined);
-    props.onConfirm();
   };
 
   return (
@@ -330,9 +340,13 @@ const ConfirmationDialog = props => {
       ) : null}
       <DialogButtons
         confirmButtonText={confirmButtonText}
-        onConfirm={onConfirm}
+        onConfirm={actionsAreExecuted ? props.onConfirm : executeActions}
         onCancel={props.onCancel}
         confirmDisabled={!permittedToGrant && !_isEmpty(actions)}
+        actions={actions}
+        executedActions={executedActions}
+        actionsAreExecuted={actionsAreExecuted}
+        executingActions={executingActions}
       />
     </Dialog>
   );

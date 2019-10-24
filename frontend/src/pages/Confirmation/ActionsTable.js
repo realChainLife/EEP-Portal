@@ -1,5 +1,10 @@
 import { Table, TableBody, TableCell, TableRow } from "@material-ui/core";
+import Card from "@material-ui/core/Card";
+import LinearProgress from "@material-ui/core/LinearProgress";
 import { withStyles } from "@material-ui/core/styles";
+import ErrorIcon from "@material-ui/icons/Close";
+import DoneIcon from "@material-ui/icons/Done";
+import TBDIcon from "@material-ui/icons/Remove";
 import React from "react";
 import strings from "../../localizeStrings";
 
@@ -56,18 +61,21 @@ const styles = {
  */
 class ActionsTable extends React.Component {
   render() {
-    const { classes, actions } = this.props;
+    const { classes, actions, executedActions, executingActions } = this.props;
     let table = [];
     if (actions !== undefined) {
       table = this.addHeader(classes, table);
-      table = this.addActions(classes, table, actions);
+      table = this.addActions(classes, table, actions, executedActions);
     }
     return (
-      <div>
-        <Table className={classes.table}>
-          <TableBody className={classes.tableBody}>{table}</TableBody>
-        </Table>
-      </div>
+      <React.Fragment>
+        <Card>
+          <Table className={classes.table}>
+            <TableBody className={classes.tableBody}>{table}</TableBody>
+          </Table>
+        </Card>
+        {executingActions ? <LinearProgress color="primary" /> : null}
+      </React.Fragment>
     );
   }
 
@@ -78,11 +86,17 @@ class ActionsTable extends React.Component {
           <TableCell className={classes.columnHeaderCell} style={{ flex: 3 }}>
             {strings.common.type}
           </TableCell>
-          <TableCell className={classes.columnHeaderCell} style={{ flex: 5 }}>
+          <TableCell className={classes.columnHeaderCell} style={{ flex: 8 }}>
             {strings.common.name}
           </TableCell>
-          <TableCell className={classes.columnHeaderCell} style={{ flex: 6 }}>
+          <TableCell className={classes.columnHeaderCell} style={{ flex: 5 }}>
             {strings.common.permission}
+          </TableCell>
+          <TableCell className={classes.columnHeaderCell} style={{ flex: 3 }}>
+            {strings.confirmation.user_group}
+          </TableCell>
+          <TableCell className={classes.columnHeaderCell} style={{ textAlign: "right" }}>
+            {strings.common.status}
           </TableCell>
         </TableRow>
       </React.Fragment>
@@ -90,7 +104,7 @@ class ActionsTable extends React.Component {
     return table;
   }
 
-  addActions(classes, table, actions) {
+  addActions(classes, table, actions, executedActions) {
     actions.forEach((action, index) => {
       const type = strings.common[action.intent.split(".")[0]];
       table.push(
@@ -98,11 +112,17 @@ class ActionsTable extends React.Component {
           <TableCell className={classes.tableCell} style={{ flex: 3 }}>
             {type}
           </TableCell>
-          <TableCell className={classes.tableCell} style={{ flex: 5 }}>
+          <TableCell className={classes.tableCell} style={{ flex: 8 }}>
             {action.displayName}
           </TableCell>
-          <TableCell className={classes.tableCell} style={{ flex: 6 }}>
+          <TableCell className={classes.tableCell} style={{ flex: 5 }}>
             {this.makePermissionReadable(action.intent)}
+          </TableCell>
+          <TableCell className={classes.tableCell} style={{ flex: 3 }}>
+            {action.identity}
+          </TableCell>
+          <TableCell className={classes.tableCell} style={{ textAlign: "right", position: "relative", bottom: "4px" }}>
+            {this.getStatusIcon(executedActions, {}, action)}
           </TableCell>
         </TableRow>
       );
@@ -110,8 +130,30 @@ class ActionsTable extends React.Component {
     return table;
   }
 
+  getStatusIcon(executedActions, failedWorkflowItem, action) {
+    if (
+      executedActions === undefined ||
+      (action.id === failedWorkflowItem.id &&
+        action.identity === failedWorkflowItem.identity &&
+        action.intent === failedWorkflowItem.intent)
+    ) {
+      return <ErrorIcon />;
+    } else {
+      if (
+        executedActions.some(
+          item => action.id === item.id && action.identity === item.identity && action.intent === item.intent
+        )
+      ) {
+        return <DoneIcon />;
+      } else {
+        return <TBDIcon />;
+      }
+    }
+  }
+
   makePermissionReadable(intent) {
-    return strings.permissions[intent.replace(/[.]/g, "_")] || intent;
+    const splittedString = intent.split(".");
+    return strings.intents[splittedString[splittedString.length - 1]] || splittedString[splittedString.length - 1];
   }
 }
 

@@ -234,13 +234,30 @@ const en = {
     not_possible_action: "Not possible actions",
     actions_done: "{0} from {1} actions done"
   },
+
   confirmation: {
     permissions_text: `{0} needs additional permissions to view {1} "{2}".`,
     assigning_text: `Would you really want to assign {0} to {1} "{2}"?`,
     grant_and_assign: "Grant & Assign",
     additional_permissions_required: "Additional permissions required",
     confirm_assign: "Confirm assign",
-    no_permission_warning: "Warning: You don't have permission to execute all listed actions!"
+    no_permission_warning: "Warning: You don't have permission to execute all listed actions!",
+    user_group: "User/Group"
+  },
+
+  intents: {
+    listPermissions: "view permissions",
+    grantPermission: "grant permission",
+    revokePermission: "revoke permission",
+    viewSummary: "view summary",
+    viewDetails: "view details",
+    viewHistory: "view history",
+    assign: "assign",
+    update: "update",
+    close: "close",
+    createSubproject: "create Subprojects",
+    createWorkflowitem: "create Workflowitems",
+    reorderWorkflowitems: "reorder Workflowitems"
   },
 
   analytics: {

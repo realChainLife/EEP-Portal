@@ -130,7 +130,7 @@ const mapDispatchToProps = (dispatch, ownProps) => {
   return {
     fetchAllSubprojectDetails: (pId, sId, loading) => dispatch(fetchAllSubprojectDetails(pId, sId, loading)),
     showCreateDialog: () => dispatch(showCreateDialog()),
-    updateSubProject: (pId, sId) => dispatch(liveUpdateSubproject(pId, sId)),
+    updateSubProject: (pId, sId) => console.log("update"),
     showSubProjectAssignee: () => dispatch(showSubProjectAssignee()),
     openHistory: () => {
       dispatch(openHistory());
