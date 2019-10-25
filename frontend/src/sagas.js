@@ -1408,7 +1408,7 @@ export function* submitBatchForWorkflowSaga({ projectId, subprojectId, actions, 
             );
             yield put({
               type: GRANT_WORKFLOWITEM_PERMISSION_SUCCESS,
-              workflowitemId: action.id, // TODO change to id
+              workflowitemId: action.id,
               intent: action.intent,
               identity: action.identity
             });

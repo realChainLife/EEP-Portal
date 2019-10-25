@@ -40,7 +40,6 @@ class WorkflowAssigneeContainer extends Component {
     } = this.props;
     const assignee = this.getWorkflowAssignee(workflowItems, workflowitemId);
 
-    // TODO: remove wrapping div and apply class to assigneeselection ?
     return (
       <div className={classes.assigneeContainer} data-test={"workflowitem-assignee"}>
         <AssigneeSelection
