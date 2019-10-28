@@ -1,4 +1,7 @@
 import _isEmpty from "lodash/isEmpty";
+import { grantPermission } from "../Overview/actions";
+import { grantSubProjectPermission } from "../SubProjects/actions";
+import { grantWorkflowItemPermission, assignSubproject, assignWorkflowItem } from "../Workflows/actions";
 
 // Side effect describes an action which triggers indirectly according to the main intent.
 // (e.g. main-intent:assign, side-effect: grant view permission)
@@ -154,4 +157,83 @@ export function createAllPermissionActions(
   });
 
   return actions;
+}
+
+export function executeOriginalActions(
+  actions,
+  project,
+  subproject,
+  assignProject,
+  assignSubproject,
+  assignWorkflowitem,
+  grantProjectPermission,
+  grantSubprojectPermission,
+  grantWorkflowitemPermission
+) {
+  for (const index in actions) {
+    const action = actions[index];
+    const resource = action.intent.split(".", 1)[0];
+    const type = action.intent.split(".")[1];
+    switch (resource) {
+      case "project":
+        switch (type) {
+          case "grant":
+            grantProjectPermission(action.payload.project.id, action.payload.intent, action.payload.grantee.id);
+            break;
+          case "assign":
+            assignProject(
+              action.payload.project.id,
+              action.payload.project.displayName,
+              action.payload.assignee.id,
+              action.payload.assignee.displayName
+            );
+            break;
+          default:
+            break;
+        }
+        break;
+      case "subproject":
+        switch (type) {
+          case "grant":
+            grantSubProjectPermission(project.id, action.id, action.intent, action.identity);
+            break;
+          case "assign":
+            assignSubproject(
+              action.payload.project.id,
+              action.payload.project.displayName,
+              action.payload.subproject.id,
+              action.payload.subproject.displayName,
+              action.payload.assignee.id,
+              action.payload.assignee.displayName
+            );
+            break;
+          default:
+            break;
+        }
+        break;
+      case "workflowitem":
+        switch (type) {
+          case "grant":
+            grantWorkflowItemPermission(project.id, subproject.id, action.id, action.intent, action.identity);
+            break;
+          case "assign":
+            assignWorkflowitem(
+              action.payload.project.id,
+              action.payload.project.displayName,
+              action.payload.subproject.id,
+              action.payload.subproject.displayName,
+              action.payload.workflowitem.id,
+              action.payload.workflowitem.displayName,
+              action.payload.assignee.id,
+              action.payload.assignee.displayName
+            );
+            break;
+          default:
+            break;
+        }
+        break;
+      default:
+        break;
+    }
+  }
 }

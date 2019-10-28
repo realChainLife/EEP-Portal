@@ -8,6 +8,21 @@ import React from "react";
 import strings from "../../../localizeStrings";
 import PermissionTable from "./PermissionsTable";
 
+const createActions = (permissions, temporayPermissions) => {
+  const actions = [];
+  Object.keys(permissions).forEach(key => {
+    const permissionIds = permissions[key];
+    const temporaryPermissionIds = temporayPermissions[key];
+
+    const revokeIds = permissionIds.filter(id => !temporaryPermissionIds.includes(id));
+    if (revokeIds.length > 0) actions.push({ type: "revoke", permission: key, userIds: revokeIds });
+    const grantIds = temporaryPermissionIds.filter(id => !permissionIds.includes(id));
+    if (grantIds.length > 0) actions.push({ type: "grant", permission: key, userIds: grantIds });
+  });
+
+  return actions;
+};
+
 const PermissionDialog = props => {
   return (
     <Dialog
@@ -30,12 +45,19 @@ const PermissionDialog = props => {
           onClick={
             JSON.stringify(props.temporaryPermissions) !== JSON.stringify(props.permissions)
               ? () => {
-                  props.showConfirmationDialog({
-                    project: { id: props.projectId, displayName: props.projectDisplayName },
-                    subproject: { id: props.subprojectId, displayName: props.subprojectDisplayName },
-                    workflowitem: { id: props.wId, displayName: props.workflowitemDisplayName },
-                    newPermissions: props.temporaryPermissions
+                  const actions = createActions(props.permissions, props.temporaryPermissions);
+                  actions.forEach(action => {
+                    if (action.type === "grant") {
+                      action.userIds.forEach(user => {
+                        props.grant(props.id, action.permission, user);
+                      });
+                    } else if (action.type === "revoke") {
+                      action.userIds.forEach(user => {
+                        props.revoke(props.id, action.permission, user);
+                      });
+                    } else console.error("Not a recognized action", action.type);
                   });
+                  props.hidePermissionDialog();
                 }
               : props.hidePermissionDialog
           }

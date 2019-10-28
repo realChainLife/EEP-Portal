@@ -28,12 +28,12 @@ import {
   GET_SUBPROJECT_KPIS_SUCCESS
 } from "./pages/Analytics/actions.js";
 import {
-  CONFIRM_INTENT,
-  INTENT_CANCELED,
-  INTENT_CONFIRMED,
+  CONFIRMATION_CANCELED,
+  CONFIRMATION_CONFIRMED,
+  CONFIRMATION_REQUIRED,
+  EXECUTE_CONFIRMED_ACTIONS,
   EXECUTE_CONFIRMED_ACTIONS_FAILURE,
-  EXECUTE_CONFIRMED_ACTIONS_SUCCESS,
-  EXECUTE_CONFIRMED_ACTIONS
+  EXECUTE_CONFIRMED_ACTIONS_SUCCESS
 } from "./pages/Confirmation/actions.js";
 import { CLEAR_DOCUMENTS, VALIDATE_DOCUMENT, VALIDATE_DOCUMENT_SUCCESS } from "./pages/Documents/actions";
 import { cancelDebounce, hideLoadingIndicator, showLoadingIndicator } from "./pages/Loading/actions.js";
@@ -220,6 +220,9 @@ const getWorkflowitemHistoryState = state => {
     historyPageSize: state.getIn(["workflowitemDetails", "historyPageSize"]),
     totalHistoryItemCount: state.getIn(["workflowitemDetails", "totalHistoryItemCount"])
   };
+};
+const getConfirmedState = state => {
+  return state.getIn(["confirmation", "confirmed"]);
 };
 
 function* execute(fn, showLoading = false, errorCallback = undefined) {
@@ -1197,6 +1200,19 @@ export function* fetchWorkflowItemPermissionsSaga({ projectId, subprojectId, wor
 
 export function* grantPermissionsSaga({ projectId, intent, identity, showLoading }) {
   yield execute(function*() {
+    const confirmed = yield select(getConfirmedState);
+    if (confirmed !== true) {
+      yield put({
+        type: CONFIRMATION_REQUIRED,
+        intent: "project.grant",
+        payload: {
+          intent,
+          project: { id: projectId, displayName: undefined },
+          grantee: { id: identity, displayName: undefined }
+        }
+      });
+      yield cancel();
+    }
     yield callApi(api.grantProjectPermissions, projectId, intent, identity);
 
     yield put({
@@ -1469,21 +1485,18 @@ export function* assignWorkflowItemSaga({
   showLoading
 }) {
   yield execute(function*() {
-    yield put({
-      type: CONFIRM_INTENT,
-      intent: "workflowitem.assign",
-      payload: {
-        project: { id: projectId, displayName: projectDisplayName },
-        subproject: { id: subprojectId, displayName: subprojectDisplayName },
-        workflowitem: { id: workflowitemId, displayName: workflowitemDisplayName },
-        assignee: { id: assigneeId, displayName: assigneeDisplayName }
-      }
-    });
-    const { canceled } = yield race({
-      confirmed: take(INTENT_CONFIRMED),
-      canceled: take(INTENT_CANCELED)
-    });
-    if (canceled) {
+    const confirmed = yield select(getConfirmedState);
+    if (confirmed !== true) {
+      yield put({
+        type: CONFIRMATION_REQUIRED,
+        intent: "workflowitem.assign",
+        payload: {
+          project: { id: projectId, displayName: projectDisplayName },
+          subproject: { id: subprojectId, displayName: subprojectDisplayName },
+          workflowitem: { id: workflowitemId, displayName: workflowitemDisplayName },
+          assignee: { id: assigneeId, displayName: assigneeDisplayName }
+        }
+      });
       yield cancel();
     }
 
@@ -1512,20 +1525,17 @@ export function* assignSubprojectSaga({
   showLoading
 }) {
   yield execute(function*() {
-    yield put({
-      type: CONFIRM_INTENT,
-      intent: "subproject.assign",
-      payload: {
-        project: { id: projectId, displayName: projectDisplayName },
-        subproject: { id: subprojectId, displayName: subprojectDisplayName },
-        assignee: { id: assigneeId, displayName: assigneeDisplayName }
-      }
-    });
-    const { canceled } = yield race({
-      confirmed: take(INTENT_CONFIRMED),
-      canceled: take(INTENT_CANCELED)
-    });
-    if (canceled) {
+    const confirmed = yield select(getConfirmedState);
+    if (confirmed !== true) {
+      yield put({
+        type: CONFIRMATION_REQUIRED,
+        intent: "subproject.assign",
+        payload: {
+          project: { id: projectId, displayName: projectDisplayName },
+          subproject: { id: subprojectId, displayName: subprojectDisplayName },
+          assignee: { id: assigneeId, displayName: assigneeDisplayName }
+        }
+      });
       yield cancel();
     }
 
@@ -1545,19 +1555,16 @@ export function* assignSubprojectSaga({
 
 export function* assignProjectSaga({ projectId, projectDisplayName, assigneeId, assigneeDisplayName, showLoading }) {
   yield execute(function*() {
-    yield put({
-      type: CONFIRM_INTENT,
-      intent: "project.assign",
-      payload: {
-        project: { id: projectId, displayName: projectDisplayName },
-        assignee: { id: assigneeId, displayName: assigneeDisplayName }
-      }
-    });
-    const { canceled } = yield race({
-      confirmed: take(INTENT_CONFIRMED),
-      canceled: take(INTENT_CANCELED)
-    });
-    if (canceled) {
+    const confirmed = yield select(getConfirmedState);
+    if (confirmed !== true) {
+      yield put({
+        type: CONFIRMATION_REQUIRED,
+        intent: "project.assign",
+        payload: {
+          project: { id: projectId, displayName: projectDisplayName },
+          assignee: { id: assigneeId, displayName: assigneeDisplayName }
+        }
+      });
       yield cancel();
     }
 

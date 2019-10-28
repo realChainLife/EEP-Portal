@@ -2,10 +2,10 @@ import { fromJS } from "immutable";
 
 import { LOGOUT } from "../Login/actions";
 import {
-  CONFIRM_INTENT,
-  INTENT_CANCELED,
-  INTENT_CONFIRMED,
-  STORE_ACTIONS,
+  CONFIRMATION_REQUIRED,
+  CONFIRMATION_CANCELED,
+  CONFIRMATION_CONFIRMED,
+  ADD_ACTIONS,
   EXECUTE_CONFIRMED_ACTIONS_SUCCESS,
   EXECUTE_CONFIRMED_ACTIONS
 } from "./actions";
@@ -17,39 +17,56 @@ import {
 import {
   FETCH_SUBPROJECT_PERMISSIONS_SUCCESS,
   FETCH_SUBPROJECT_PERMISSIONS,
-  GRANT_SUBPROJECT_PERMISSION_SUCCESS
+  GRANT_SUBPROJECT_PERMISSION_SUCCESS,
+  ASSIGN_PROJECT_SUCCESS,
+  FETCH_ALL_PROJECT_DETAILS_SUCCESS
 } from "../SubProjects/actions";
 import {
   FETCH_WORKFLOWITEM_PERMISSIONS_SUCCESS,
   FETCH_WORKFLOWITEM_PERMISSIONS,
-  GRANT_WORKFLOWITEM_PERMISSION_SUCCESS
+  GRANT_WORKFLOWITEM_PERMISSION_SUCCESS,
+  ASSIGN_SUBPROJECT_SUCCESS,
+  ASSIGN_WORKFLOWITEM_SUCCESS,
+  FETCH_ALL_SUBPROJECT_DETAILS_SUCCESS
 } from "../Workflows/actions";
 
 const defaultState = fromJS({
   open: false,
   intent: "",
+  originalActions: [],
   permissions: { project: {}, subproject: {}, workflowitem: {} },
   payload: {},
   isFetchingProjectPermissions: false,
   isFetchingSubprojectPermissions: false,
   isFetchingWorkflowitemPermissions: false,
+  executedOriginalActions: [],
+  actions: [],
   executedActions: [],
   actionsAreExecuted: false,
   executingActions: false,
-  actions: []
+  confirmed: undefined,
+  project: {},
+  subproject: {},
+  workflowitem: {}
 });
 
 export default function confirmationReducer(state = defaultState, action) {
   switch (action.type) {
-    case CONFIRM_INTENT:
+    case CONFIRMATION_REQUIRED:
+      const { project, subproject, workflowitem } = action.payload;
       return state.merge({
         open: true,
-        intent: action.intent,
-        payload: action.payload
+        confirmed: false,
+        originalActions: state
+          .updateIn(["originalActions"], intent => [...intent, { intent: action.intent, payload: action.payload }])
+          .get("originalActions"),
+        project: project || defaultState.get("project"),
+        subproject: subproject || defaultState.get("subproject"),
+        workflowitem: workflowitem || defaultState.get("workflowitem")
       });
-    case INTENT_CONFIRMED: // TODO: don't fetch permissions every time confirmation dialog opens
-      return defaultState;
-    case INTENT_CANCELED:
+    case CONFIRMATION_CONFIRMED: // TODO: don't fetch permissions every time confirmation dialog opens
+      return defaultState.set("confirmed", true);
+    case CONFIRMATION_CANCELED:
       return defaultState;
     case FETCH_PROJECT_PERMISSIONS:
       return state.set("isFetchingProjectPermissions", true);
@@ -82,8 +99,15 @@ export default function confirmationReducer(state = defaultState, action) {
       return state.set("executingActions", true);
     case EXECUTE_CONFIRMED_ACTIONS_SUCCESS:
       return state.set("actionsAreExecuted", true).set("executingActions", false);
-    case STORE_ACTIONS:
-      return state.set("actions", action.actions);
+    case ADD_ACTIONS:
+      return state.merge({
+        actions: state.updateIn(["actions"], actions => [...actions, ...action.actions]).get("actions")
+      });
+    case ASSIGN_PROJECT_SUCCESS:
+    case ASSIGN_SUBPROJECT_SUCCESS:
+    case ASSIGN_WORKFLOWITEM_SUCCESS:
+      return state.set("confirmed", defaultState.get("confirmed"));
+
     case LOGOUT:
       return defaultState;
     default:

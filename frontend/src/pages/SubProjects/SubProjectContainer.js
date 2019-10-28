@@ -91,7 +91,7 @@ class SubProjectContainer extends Component {
 const mapDispatchToProps = (dispatch, ownProps) => {
   return {
     fetchAllProjectDetails: (projectId, showLoading) => dispatch(fetchAllProjectDetails(projectId, showLoading)),
-    liveUpdate: projectId => console.log(dispatch(liveUpdateProject(projectId))),
+    liveUpdate: projectId => console.log("update"), //dispatch(liveUpdateProject(projectId))
     showSubprojectDialog: () => dispatch(showSubprojectDialog()),
 
     openHistory: () => {

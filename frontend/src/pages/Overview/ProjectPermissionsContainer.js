@@ -54,7 +54,6 @@ class ProjectPermissionsContainer extends Component {
         title={strings.project.project_permissions_title}
         intentOrder={projectIntentOrder}
         disabled={!this.isEnabled(allowedIntents)}
-        showConfirmationDialog={payload => this.props.showConfirmationDialog("project.intent.grant", payload)}
       />
     );
   }
@@ -81,7 +80,8 @@ const mapDispatchToProps = dispatch => {
     fetchUser: showLoading => dispatch(fetchUser(showLoading)),
     addTemporaryPermission: (permission, userId) => dispatch(addTemporaryPermission(permission, userId)),
     removeTemporaryPermission: (permission, userId) => dispatch(removeTemporaryPermission(permission, userId)),
-    showConfirmationDialog: (intent, payload) => dispatch(showConfirmationDialog(intent, payload))
+    showConfirmationDialog: (intent, payload) => dispatch(showConfirmationDialog(intent, payload)),
+    grantProjectPermission: (pId, permission, identity) => dispatch(grantPermission(pId, permission, identity))
   };
 };
 

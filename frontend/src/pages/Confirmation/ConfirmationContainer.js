@@ -2,52 +2,54 @@ import _isEmpty from "lodash/isEmpty";
 import React, { Component } from "react";
 import { connect } from "react-redux";
 import { toJS } from "../../helper";
-import { fetchProjectPermissions } from "../Overview/actions";
-import { fetchSubProjectPermissions } from "../SubProjects/actions";
-import { fetchWorkflowItemPermissions } from "../Workflows/actions";
-import { cancelConfirmation, confirmConfirmation, executeConfirmedActions, storeActions } from "./actions";
+import { fetchProjectPermissions, grantPermission } from "../Overview/actions";
+import { assignProject, fetchSubProjectPermissions } from "../SubProjects/actions";
+import { assignSubproject, assignWorkflowItem, fetchWorkflowItemPermissions } from "../Workflows/actions";
+import { addActions, cancelConfirmation, confirmConfirmation, executeConfirmedActions } from "./actions";
 import ConfirmationDialog from "./ConfirmationDialog";
+import { executeOriginalActions } from "./SideEffectActions";
 
 class ConfirmationContainer extends Component {
-  fetchPermissions(intentToConfirm) {
-    const { payload } = this.props; // TODO: validate payload
-    switch (intentToConfirm.split(".")[0]) {
-      case "project":
-        this.props.fetchProjectPermissions(payload.project.id);
-        break;
-      case "subproject":
-        this.props.fetchProjectPermissions(payload.project.id);
-        this.props.fetchSubprojectPermissions(payload.project.id, payload.subproject.id);
-        break;
-      case "workflowitem":
-        this.props.fetchProjectPermissions(payload.project.id);
-        this.props.fetchSubprojectPermissions(payload.project.id, payload.subproject.id);
-        this.props.fetchWorkflowitemPermissions(payload.project.id, payload.subproject.id, payload.workflowitem.id);
-        break;
-      default:
-        break;
+  componentDidUpdate(prevProps) {
+    if (this.props.confirmed !== prevProps.confirmed && this.props.confirmed === true) {
+      executeOriginalActions(
+        prevProps.originalActions,
+        this.props.project,
+        this.props.subproject,
+        this.props.assignProject,
+        this.props.assignSubproject,
+        this.props.assignWorkflowitem,
+        this.props.grantProjectPermission,
+        this.props.grantSubprojectPermission,
+        this.props.grantWorkflowitemPermission
+      );
     }
+  }
+
+  fetchPermissions(project, subproject, workflowitem) {
+    this.props.fetchProjectPermissions(project.id);
+    if (!_isEmpty(subproject)) this.props.fetchSubprojectPermissions(project.id, subproject.id);
+    if (!_isEmpty(workflowitem)) this.props.fetchWorkflowitemPermissions(project.id, subproject.id, workflowitem.id);
   }
 
   render() {
     if (this.props.confirmationDialogOpen) {
       const permissions = this.props.permissions;
       if (
-        !_isEmpty(this.props.payload) &&
+        this.props.originalActions.some(action => !_isEmpty(action.payload)) &&
         _isEmpty(permissions.project) &&
         !this.props.isFetchingProjectPermissions &&
         !this.props.isFetchingSubprojectPermissions &&
         !this.props.isFetchingWorkflowitemPermissions
       )
-        this.fetchPermissions(this.props.intentToConfirm); // TODO: don't fetch Permissions every time the dialog opens
-      return (
+        this.fetchPermissions(this.props.project, this.props.subproject, this.props.workflowitem); // TODO: don't fetch Permissions every time the dialog opens
+      return this.props.confirmed === false ? (
         <ConfirmationDialog
           open={this.props.confirmationDialogOpen}
-          intent={this.props.intentToConfirm}
+          originalActions={this.props.originalActions}
           onConfirm={this.props.confirmConfirmation}
           onCancel={this.props.cancelConfirmation}
           executeConfirmedActions={this.props.executeConfirmedActions}
-          payload={this.props.payload}
           permissions={this.props.permissions}
           confirmingUser={this.props.confirmingUser}
           isFetchingProjectPermissions={this.props.isFetchingProjectPermissions}
@@ -55,11 +57,14 @@ class ConfirmationContainer extends Component {
           isFetchingWorkflowitemPermissions={this.props.isFetchingWorkflowitemPermissions}
           executedActions={this.props.executedActions}
           actions={this.props.actions}
-          storeActions={this.props.storeActions}
+          addActions={this.props.addActions}
           actionsAreExecuted={this.props.actionsAreExecuted}
           executingActions={this.props.executingActions}
+          project={this.props.project}
+          subproject={this.props.subproject}
+          workflowitem={this.props.workflowitem}
         />
-      );
+      ) : null;
     }
     return null;
   }
@@ -73,16 +78,22 @@ const mapDispatchToProps = dispatch => {
     confirmConfirmation: () => dispatch(confirmConfirmation(true)),
     cancelConfirmation: () => dispatch(cancelConfirmation(false)),
     executeConfirmedActions: (actions, pId, subId) => dispatch(executeConfirmedActions(actions, pId, subId, false)),
-    storeActions: actions => dispatch(storeActions(actions))
+    addActions: actions => dispatch(addActions(actions)),
+    assignProject: (projectId, projectDisplayName, assigneeId, assigneeDisplayName) =>
+      dispatch(assignProject(projectId, projectDisplayName, assigneeId, assigneeDisplayName)),
+    assignSubproject: (pId, pDisplayName, subpId, subpName, assigneeId, assigneeName) =>
+      dispatch(assignSubproject(pId, pDisplayName, subpId, subpName, assigneeId, assigneeName)),
+    assignWorkflowitem: (pId, pDisplayName, subpId, subpName, wId, wName, assigneeId, assigneeName) =>
+      dispatch(assignWorkflowItem(pId, pDisplayName, subpId, subpName, wId, wName, assigneeId, assigneeName)),
+    grantProjectPermission: (pId, permission, identity) => dispatch(grantPermission(pId, permission, identity))
   };
 };
 
 const mapStateToProps = state => {
   return {
     confirmationDialogOpen: state.getIn(["confirmation", "open"]),
-    intentToConfirm: state.getIn(["confirmation", "intent"]),
+    originalActions: state.getIn(["confirmation", "originalActions"]),
     confirmDisabled: state.getIn(["confirmation", "disabled"]),
-    payload: state.getIn(["confirmation", "payload"]),
     permissions: state.getIn(["confirmation", "permissions"]),
     confirmingUser: state.getIn(["login", "id"]),
     isFetchingProjectPermissions: state.getIn(["confirmation", "isFetchingProjectPermissions"]),
@@ -91,7 +102,11 @@ const mapStateToProps = state => {
     executedActions: state.getIn(["confirmation", "executedActions"]),
     actions: state.getIn(["confirmation", "actions"]),
     actionsAreExecuted: state.getIn(["confirmation", "actionsAreExecuted"]),
-    executingActions: state.getIn(["confirmation", "executingActions"])
+    executingActions: state.getIn(["confirmation", "executingActions"]),
+    confirmed: state.getIn(["confirmation", "confirmed"]),
+    project: state.getIn(["confirmation", "project"]),
+    subproject: state.getIn(["confirmation", "subproject"]),
+    workflowitem: state.getIn(["confirmation", "workflowitem"])
   };
 };
 

@@ -1,17 +1,16 @@
-import React from "react";
-import { withStyles } from "@material-ui/core/styles";
+import { CircularProgress, Typography } from "@material-ui/core";
 import Dialog from "@material-ui/core/Dialog";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
-
-import strings from "../../localizeStrings";
-import DialogButtons from "./DialogButtons";
-import ActionsTable from "./ActionsTable";
+import { withStyles } from "@material-ui/core/styles";
 import _isEmpty from "lodash/isEmpty";
-import { createAllSideEffectActions, createAllPermissionActions } from "./SideEffectActions";
-import WarningTypography from "./WarningTypography";
-import { Typography, CircularProgress } from "@material-ui/core";
+import React from "react";
 import { formatString } from "../../helper";
+import strings from "../../localizeStrings";
+import ActionsTable from "./ActionsTable";
+import DialogButtons from "./DialogButtons";
+import { createAllPermissionActions, createAllSideEffectActions } from "./SideEffectActions";
+import WarningTypography from "./WarningTypography";
 
 const styles = {
   paperRoot: {
@@ -39,15 +38,16 @@ const ConfirmationDialog = props => {
   const {
     classes,
     open = false,
-    intent,
-    payload,
     permissions,
     confirmingUser,
     executedActions,
     actions,
-    storeActions,
+    addActions,
     actionsAreExecuted,
-    executingActions
+    executingActions,
+    originalActions,
+    project,
+    subproject
   } = props;
 
   // If permissions are not fetched yet show Loading indicator
@@ -76,193 +76,57 @@ const ConfirmationDialog = props => {
   let title,
     content,
     confirmButtonText = strings.common.confirm,
-    executeActions = props.onConfirm,
     permittedToGrant = false;
 
-  switch (intent) {
-    case "project.assign": {
-      // The payload is defined by the saga which triggers the CONFIRM_INTENT-action
-      // TODO: Verify payload
-      const projectPermissions = { project: permissions.project };
-      const project = {
-        id: payload.project.id,
-        displayName: payload.project.displayName
-      };
-      // Create actions
-      if (_isEmpty(actions)) storeActions(createAllSideEffectActions(projectPermissions, payload.assignee.id, project));
-      permittedToGrant = permissions.project["project.intent.grantPermission"].includes(confirmingUser);
-
-      // Build Dialog content
-      if (!_isEmpty(actions)) {
-        title = strings.confirmation.additional_permissions_required;
-        confirmButtonText = strings.confirmation.grant_and_assign;
-        const dialogText = formatString(
-          strings.confirmation.permissions_text,
-          payload.assignee.displayName,
-          strings.common.project,
-          payload.project.displayName
-        );
-        content = (
-          <>
-            <Typography>{dialogText}</Typography>
-            <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
-          </>
-        );
-      } else {
-        title = strings.confirmation.confirm_assign;
-        confirmButtonText = strings.common.assign;
-        const dialogText = formatString(
-          strings.confirmation.assigning_text,
-          payload.assignee.displayName,
-          strings.common.project,
-          payload.project.displayName
-        );
-        content = <Typography>{dialogText}</Typography>;
-      }
-      break;
-    }
-    case "subproject.assign": {
-      // The payload is defined by the saga which triggers the CONFIRM_INTENT-action
-      // TODO: Verify payload
-      const subprojectPermissions = { project: permissions.project, subproject: permissions.subproject };
-      const project = {
-        id: payload.project.id,
-        displayName: payload.project.displayName
-      };
-      const subproject = {
-        id: payload.subproject.id,
-        displayName: payload.subproject.displayName
-      };
-
-      // Create Actions
-      if (_isEmpty(actions))
-        storeActions(createAllSideEffectActions(subprojectPermissions, payload.assignee.id, project, subproject));
-
-      permittedToGrant = isPermittedToGrant(confirmingUser, subprojectPermissions, actions);
-
-      // Build Dialog content
-      if (!_isEmpty(actions)) {
-        title = strings.confirmation.additional_permissions_required;
-        confirmButtonText = strings.confirmation.grant_and_assign;
-        const dialogText = formatString(
-          strings.confirmation.permissions_text,
-          payload.assignee.displayName,
-          strings.common.subproject,
-          payload.subproject.displayName
-        );
-        content = (
-          <>
-            <Typography>{dialogText}</Typography>
-            <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
-          </>
-        );
-      } else {
-        title = strings.confirmation.confirm_assign;
-        confirmButtonText = strings.common.assign;
-        const dialogText = formatString(
-          strings.confirmation.assigning_text,
-          payload.assignee.displayName,
-          strings.common.subproject,
-          payload.subproject.displayName
-        );
-        content = <Typography>{dialogText}</Typography>;
-      }
-      break;
-    }
-    case "workflowitem.assign": {
-      // The payload is defined by the saga which triggers the CONFIRM_INTENT-action
-      // TODO: Verify payload
-      const workflowitemPermissions = {
-        project: permissions.project,
-        subproject: permissions.subproject,
-        workflowitem: permissions.workflowitem
-      };
-      const project = {
-        id: payload.project.id,
-        displayName: payload.project.displayName
-      };
-      const subproject = {
-        id: payload.subproject.id,
-        displayName: payload.subproject.displayName
-      };
-      const workflowitem = {
-        id: payload.workflowitem.id,
-        displayName: payload.workflowitem.displayName
-      };
-
-      // Create Actions
-      if (_isEmpty(actions)) {
-        storeActions(
-          createAllSideEffectActions(workflowitemPermissions, payload.assignee.id, project, subproject, workflowitem)
-        );
-      }
-
-      permittedToGrant = isPermittedToGrant(confirmingUser, workflowitemPermissions, actions);
-
-      // Build Dialog content
-      if (!_isEmpty(actions)) {
-        title = strings.confirmation.additional_permissions_required;
-        confirmButtonText = strings.confirmation.grant_and_assign;
-        const dialogText = formatString(
-          strings.confirmation.permissions_text,
-          payload.assignee.displayName,
-          strings.common.workflowitem,
-          payload.workflowitem.displayName
-        );
-        content = (
-          <>
-            <Typography>{dialogText}</Typography>
-            <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
-          </>
-        );
-      } else {
-        title = strings.confirmation.confirm_assign;
-        confirmButtonText = strings.common.assign;
-        const dialogText = formatString(
-          strings.confirmation.assigning_text,
-          payload.assignee.displayName,
-          strings.common.workflowitem,
-          payload.workflowitem.displayName
-        );
-        content = <Typography>{dialogText}</Typography>;
-      }
-      break;
-    }
-    case "project.intent.grant":
-    case "project.intent.revoke":
-      {
-        // The payload is defined by an action which is triggered by the PermissionDialog
+  originalActions.forEach(originalAction => {
+    const { intent, payload } = originalAction;
+    switch (intent) {
+      case "project.assign": {
+        // The payload is defined by the saga which triggers the CONFIRM_INTENT-action
         // TODO: Verify payload
         const projectPermissions = { project: permissions.project };
         const project = {
           id: payload.project.id,
           displayName: payload.project.displayName
         };
-
-        // Create grant/revoke actions including side effect actions
-        if (_isEmpty(actions))
-          storeActions(createAllPermissionActions(projectPermissions, payload.newPermissions, project)); // TODO move logic to sagas createAllSideEffectActions/createAllPermissionActions
-
+        // Create actions
+        if (_isEmpty(actions)) {
+          const sideEffectActions = createAllSideEffectActions(projectPermissions, payload.assignee.id, project);
+          if (!_isEmpty(sideEffectActions)) addActions(sideEffectActions);
+        }
         permittedToGrant = permissions.project["project.intent.grantPermission"].includes(confirmingUser);
 
         // Build Dialog content
-        title = strings.confirmation.additional_permissions_required;
-        confirmButtonText = strings.common.grant;
-        const dialogText =
-          "Note that additionally to Write/Admin Permissions View Permissions are granted. Following actions show all actions that shall be executed";
-        content = (
-          <>
-            <Typography>{dialogText}</Typography>
-            <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
-          </>
-        );
+        if (!_isEmpty(actions)) {
+          title = strings.confirmation.additional_permissions_required;
+          confirmButtonText = strings.confirmation.grant_and_assign;
+          const dialogText = formatString(
+            strings.confirmation.permissions_text,
+            payload.assignee.displayName,
+            strings.common.project,
+            payload.project.displayName
+          );
+          content = (
+            <>
+              <Typography>{dialogText}</Typography>
+              <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
+            </>
+          );
+        } else {
+          title = strings.confirmation.confirm_assign;
+          confirmButtonText = strings.common.assign;
+          const dialogText = formatString(
+            strings.confirmation.assigning_text,
+            payload.assignee.displayName,
+            strings.common.project,
+            payload.project.displayName
+          );
+          content = <Typography>{dialogText}</Typography>;
+        }
+        break;
       }
-      break;
-
-    case "subproject.intent.grant":
-    case "subproject.intent.revoke":
-      {
-        // The payload is defined by an action which is triggered by the PermissionDialog
+      case "subproject.assign": {
+        // The payload is defined by the saga which triggers the CONFIRM_INTENT-action
         // TODO: Verify payload
         const subprojectPermissions = { project: permissions.project, subproject: permissions.subproject };
         const project = {
@@ -274,30 +138,56 @@ const ConfirmationDialog = props => {
           displayName: payload.subproject.displayName
         };
 
-        // Create grant/revoke actions including side effect actions
-        if (_isEmpty(actions))
-          storeActions(createAllPermissionActions(subprojectPermissions, payload.newPermissions, project, subproject));
+        // Create Actions
+        if (_isEmpty(actions)) {
+          const sideEffectactions = createAllSideEffectActions(
+            subprojectPermissions,
+            payload.assignee.id,
+            project,
+            subproject
+          );
+          if (!_isEmpty(sideEffectactions)) addActions(sideEffectactions);
+        }
 
-        permittedToGrant = permissions.subproject["subproject.intent.grantPermission"].includes(confirmingUser);
+        permittedToGrant = isPermittedToGrant(confirmingUser, subprojectPermissions, actions);
 
         // Build Dialog content
-        title = strings.confirmation.additional_permissions_required;
-        confirmButtonText = strings.common.grant;
-        const dialogText =
-          "Note that additionally to Write/Admin Permissions View Permissions are granted. Following actions show all actions that shall be executed";
-        content = (
-          <>
-            <Typography>{dialogText}</Typography>
-            <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
-          </>
-        );
+        if (!_isEmpty(actions)) {
+          title = strings.confirmation.additional_permissions_required;
+          confirmButtonText = strings.confirmation.grant_and_assign;
+          const dialogText = formatString(
+            strings.confirmation.permissions_text,
+            payload.assignee.displayName,
+            strings.common.subproject,
+            payload.subproject.displayName
+          );
+          content = (
+            <>
+              <Typography>{dialogText}</Typography>
+              <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
+            </>
+          );
+        } else {
+          title = strings.confirmation.confirm_assign;
+          confirmButtonText = strings.common.assign;
+          const dialogText = formatString(
+            strings.confirmation.assigning_text,
+            payload.assignee.displayName,
+            strings.common.subproject,
+            payload.subproject.displayName
+          );
+          content = <Typography>{dialogText}</Typography>;
+        }
+        break;
       }
-      break;
-    case "workflowitem.intent.grant":
-    case "workflowitem.intent.revoke":
-      {
-        // The payload is defined by an action which is triggered by the PermissionDialog
+      case "workflowitem.assign": {
+        // The payload is defined by the saga which triggers the CONFIRM_INTENT-action
         // TODO: Verify payload
+        const workflowitemPermissions = {
+          project: permissions.project,
+          subproject: permissions.subproject,
+          workflowitem: permissions.workflowitem
+        };
         const project = {
           id: payload.project.id,
           displayName: payload.project.displayName
@@ -311,39 +201,164 @@ const ConfirmationDialog = props => {
           displayName: payload.workflowitem.displayName
         };
 
-        // Create grant/revoke actions including side effect actions
+        // Create Actions
         if (_isEmpty(actions)) {
-          storeActions(
-            createAllPermissionActions(permissions, payload.newPermissions, project, subproject, workflowitem)
+          const sideEffectactions = createAllSideEffectActions(
+            workflowitemPermissions,
+            payload.assignee.id,
+            project,
+            subproject,
+            workflowitem
           );
+          if (!_isEmpty(sideEffectactions)) addActions(sideEffectactions);
         }
 
-        permittedToGrant = permissions.subproject["subproject.intent.grantPermission"].includes(confirmingUser);
+        permittedToGrant = isPermittedToGrant(confirmingUser, workflowitemPermissions, actions);
 
         // Build Dialog content
-        title = strings.confirmation.additional_permissions_required;
-        confirmButtonText = strings.common.grant;
-        const dialogText =
-          "Note that additionally to Write/Admin Permissions View Permissions are granted. Following actions show all actions that shall be executed";
-        content = (
-          <>
-            <Typography>{dialogText}</Typography>
-            {!_isEmpty(actions) ? <ActionsTable actions={actions} executedActions={executedActions} /> : null}
-          </>
-        );
+        if (!_isEmpty(actions)) {
+          title = strings.confirmation.additional_permissions_required;
+          confirmButtonText = strings.confirmation.grant_and_assign;
+          const dialogText = formatString(
+            strings.confirmation.permissions_text,
+            payload.assignee.displayName,
+            strings.common.workflowitem,
+            payload.workflowitem.displayName
+          );
+          content = (
+            <>
+              <Typography>{dialogText}</Typography>
+              <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
+            </>
+          );
+        } else {
+          title = strings.confirmation.confirm_assign;
+          confirmButtonText = strings.common.assign;
+          const dialogText = formatString(
+            strings.confirmation.assigning_text,
+            payload.assignee.displayName,
+            strings.common.workflowitem,
+            payload.workflowitem.displayName
+          );
+          content = <Typography>{dialogText}</Typography>;
+        }
+        break;
       }
-      break;
+      case "project.intent.grant":
+      case "project.intent.revoke":
+        {
+          // The payload is defined by an action which is triggered by the PermissionDialog
+          // TODO: Verify payload
+          const projectPermissions = { project: permissions.project };
+          const project = {
+            id: payload.project.id,
+            displayName: payload.project.displayName
+          };
 
-    default:
-      title = "Not implemented confirmation";
-      content = "Confirmation Dialog for " + intent + " is not implemented yet";
-      break;
-  }
+          // Create grant/revoke actions including side effect actions
+          if (_isEmpty(actions))
+            addActions(createAllPermissionActions(projectPermissions, payload.newPermissions, project)); // TODO move logic to sagas createAllSideEffectActions/createAllPermissionActions
 
-  executeActions = () => {
-    const subproject = payload.subproject;
-    if (!_isEmpty(actions))
-      props.executeConfirmedActions(actions, payload.project.id, subproject ? subproject.id : undefined);
+          permittedToGrant = permissions.project["project.intent.grantPermission"].includes(confirmingUser);
+
+          // Build Dialog content
+          title = strings.confirmation.additional_permissions_required;
+          confirmButtonText = strings.common.grant;
+          const dialogText =
+            "Note that additionally to Write/Admin Permissions View Permissions are granted. Following actions show all actions that shall be executed";
+          content = (
+            <>
+              <Typography>{dialogText}</Typography>
+              <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
+            </>
+          );
+        }
+        break;
+
+      case "subproject.intent.grant":
+      case "subproject.intent.revoke":
+        {
+          // The payload is defined by an action which is triggered by the PermissionDialog
+          // TODO: Verify payload
+          const subprojectPermissions = { project: permissions.project, subproject: permissions.subproject };
+          const project = {
+            id: payload.project.id,
+            displayName: payload.project.displayName
+          };
+          const subproject = {
+            id: payload.subproject.id,
+            displayName: payload.subproject.displayName
+          };
+
+          // Create grant/revoke actions including side effect actions
+          if (_isEmpty(actions))
+            addActions(createAllPermissionActions(subprojectPermissions, payload.newPermissions, project, subproject));
+
+          permittedToGrant = permissions.subproject["subproject.intent.grantPermission"].includes(confirmingUser);
+
+          // Build Dialog content
+          title = strings.confirmation.additional_permissions_required;
+          confirmButtonText = strings.common.grant;
+          const dialogText =
+            "Note that additionally to Write/Admin Permissions View Permissions are granted. Following actions show all actions that shall be executed";
+          content = (
+            <>
+              <Typography>{dialogText}</Typography>
+              <ActionsTable actions={actions} executedActions={executedActions} executingActions={executingActions} />
+            </>
+          );
+        }
+        break;
+      case "workflowitem.intent.grant":
+      case "workflowitem.intent.revoke":
+        {
+          // The payload is defined by an action which is triggered by the PermissionDialog
+          // TODO: Verify payload
+          const project = {
+            id: payload.project.id,
+            displayName: payload.project.displayName
+          };
+          const subproject = {
+            id: payload.subproject.id,
+            displayName: payload.subproject.displayName
+          };
+          const workflowitem = {
+            id: payload.workflowitem.id,
+            displayName: payload.workflowitem.displayName
+          };
+
+          // Create grant/revoke actions including side effect actions
+          if (_isEmpty(actions)) {
+            addActions(
+              createAllPermissionActions(permissions, payload.newPermissions, project, subproject, workflowitem)
+            );
+          }
+
+          permittedToGrant = permissions.subproject["subproject.intent.grantPermission"].includes(confirmingUser);
+
+          // Build Dialog content
+          title = strings.confirmation.additional_permissions_required;
+          confirmButtonText = strings.common.grant;
+          const dialogText =
+            "Note that additionally to Write/Admin Permissions View Permissions are granted. Following actions show all actions that shall be executed";
+          content = (
+            <>
+              <Typography>{dialogText}</Typography>
+              {!_isEmpty(actions) ? <ActionsTable actions={actions} executedActions={executedActions} /> : null}
+            </>
+          );
+        }
+        break;
+
+      default:
+        title = "Not implemented confirmation";
+        content = "Confirmation Dialog for " + intent + " is not implemented yet";
+        break;
+    }
+  });
+
+  const executeActions = () => {
+    if (!_isEmpty(actions)) props.executeConfirmedActions(actions, project.id, subproject ? subproject.id : undefined);
   };
 
   return (
@@ -355,7 +370,7 @@ const ConfirmationDialog = props => {
       ) : null}
       <DialogButtons
         confirmButtonText={confirmButtonText}
-        onConfirm={actionsAreExecuted ? props.onConfirm : executeActions}
+        onConfirm={_isEmpty(actions) || actionsAreExecuted ? props.onConfirm : executeActions}
         onCancel={props.onCancel}
         confirmDisabled={!permittedToGrant && !_isEmpty(actions)}
         actions={actions}
