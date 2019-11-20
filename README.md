@@ -21,8 +21,6 @@
 
 EEP-Portal - a trusted public expenditure tool. A collaborative workflow tool and secured platform to track and coordinate the implementation of donor-funded investment projects. 
 
-If you have questions or just want to talk to us, find us on [Gitter](https://gitter.im/Tru-Community/community)!
-
 # Getting Started
 
 These instructions will help you deploy your own EEP-Portal platform having two nodes of separate organizations connected to the same network.
